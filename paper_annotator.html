@@ -717,7 +717,7 @@ async function callClaudeApi(apiKey, pdfBase64, mode, lang, questions) {
     },
     signal: currentAbortController?.signal,
     body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-sonnet-4-6',
       max_tokens: 8000,
       system: buildSystemPrompt(mode, lang, questions),
       messages: [{
