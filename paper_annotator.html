@@ -357,7 +357,7 @@ h1 em { color: var(--gold-dim); font-style: italic; }
               <input type="file" class="drop-input" id="file-input" accept=".pdf">
               <span class="drop-icon">📋</span>
               <div class="drop-title">拖拽 PDF 文件到这里</div>
-              <div class="drop-sub">支持 .pdf 格式，最大 30MB</div>
+              <div class="drop-sub">支持 .pdf 格式，最大 10MB</div>
             </div>
             <div class="or-divider">或</div>
             <button class="file-btn" onclick="document.getElementById('file-input').click()">📁 浏览本地文件</button>
@@ -549,7 +549,7 @@ dropZone.addEventListener('drop', e => {
   const f = e.dataTransfer.files[0];
   if (f) {
     if (f.type !== 'application/pdf' && !f.name.endsWith('.pdf')) { toast('请上传 PDF 文件', 'err'); return; }
-    if (f.size > 30 * 1024 * 1024) { toast('文件超过 30MB 限制', 'err'); return; }
+    if (f.size > 10 * 1024 * 1024) { toast('文件超过 10MB 限制，请压缩 PDF 后重试（推荐使用 smallpdf.com）', 'err'); return; }
     setFile(f);
   }
 });
@@ -736,7 +736,7 @@ async function callClaudeApi(apiKey, pdfBase64, mode, lang, questions) {
     // Special messages
     if (response.status === 401) msg = 'API Key 无效，请重新配置';
     if (response.status === 429) msg = '请求频率超限，请稍后再试';
-    if (response.status === 413) msg = 'PDF 文件过大，请压缩后重试';
+    if (response.status === 413) msg = 'PDF 文件过大（超出 API 限制），请压缩至 10MB 以下后重试。推荐使用 smallpdf.com 或 ilovepdf.com';
     throw new Error(msg);
   }
 
