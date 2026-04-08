@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PaperLens · 文献智能批注</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#0e1117;--ink2:#1e2330;
+  --paper:#f7f5f0;--paper2:#ede9e0;--paper3:#e2ddd3;
+  --gold:#c9a84c;--gold-l:#f0d898;--gold-d:#7a6030;
+  --red:#c03a2b;--blue:#1a5c9e;--green:#2a7a4e;
+  --white:#fff;
+  --b:rgba(14,17,23,.10);--bm:rgba(14,17,23,.18);
+  --sh:0 2px 12px rgba(14,17,23,.08);--shl:0 8px 32px rgba(14,17,23,.14);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:'DM Sans',sans-serif;background:var(--paper);color:var(--ink);min-height:100vh;overflow-x:hidden}
+
+/* UPLOAD VIEW */
+#uv{min-height:100vh;display:flex;flex-direction:column}
+.hd{padding:1.2rem 2.5rem;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--b);background:var(--white)}
+.logo{font-family:'Playfair Display',serif;font-size:21px;letter-spacing:-.02em}
+.logo span{color:var(--gold)}
+.hd-r{display:flex;align-items:center;gap:10px}
+.hd-tag{font-size:11px;color:#aaa;letter-spacing:.08em;text-transform:uppercase}
+.key-btn{display:flex;align-items:center;gap:6px;padding:6px 12px;background:var(--paper2);border:1px solid var(--bm);border-radius:6px;font-size:12px;font-family:'DM Sans',sans-serif;color:#666;cursor:pointer;transition:all .2s}
+.key-btn:hover{background:var(--paper3);color:var(--ink)}
+.kd{width:7px;height:7px;border-radius:50%;background:#ddd;flex-shrink:0;transition:background .3s}
+.kd.on{background:var(--green)}
+
+.hero{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:3rem 1.5rem;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;inset:0;background-image:linear-gradient(var(--b) 1px,transparent 1px),linear-gradient(90deg,var(--b) 1px,transparent 1px);background-size:52px 52px;pointer-events:none}
+.hi{position:relative;z-index:1;max-width:680px;width:100%;text-align:center}
+.ey{display:inline-flex;align-items:center;gap:7px;background:var(--ink2);color:var(--gold-l);font-size:10px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;padding:4px 12px;border-radius:20px;margin-bottom:1.2rem}
+.eyd{width:5px;height:5px;border-radius:50%;background:var(--gold)}
+h1{font-family:'Playfair Display',serif;font-size:clamp(28px,4.5vw,48px);line-height:1.15;margin-bottom:.8rem;letter-spacing:-.02em}
+h1 em{color:var(--gold-d);font-style:italic}
+.sub{font-size:15px;color:#666;margin-bottom:2.25rem;line-height:1.65;max-width:500px;margin-left:auto;margin-right:auto}
+
+/* UPLOAD CARD */
+.uc{background:var(--white);border:1px solid var(--bm);border-radius:14px;box-shadow:var(--shl);overflow:hidden;text-align:left}
+.tabs{display:flex;background:var(--paper2);border-bottom:1px solid var(--b)}
+.tab{flex:1;padding:11px 14px;font-size:13px;font-weight:500;color:#999;cursor:pointer;background:none;border:none;border-bottom:2px solid transparent;font-family:'DM Sans',sans-serif;transition:all .18s;display:flex;align-items:center;justify-content:center;gap:5px}
+.tab.on{color:var(--ink);background:var(--white);border-bottom-color:var(--gold)}
+.tab:hover:not(.on){background:var(--paper3);color:var(--ink2)}
+.pnl{display:none;padding:1.4rem}
+.pnl.on{display:block}
+
+/* DROP */
+.dz{border:2px dashed var(--bm);border-radius:10px;padding:2rem 1.5rem;text-align:center;cursor:pointer;transition:all .2s;background:var(--paper);position:relative;overflow:hidden}
+.dz:hover,.dz.ov{border-color:var(--gold);background:#fdf9ee}
+.dz input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.dz-ico{font-size:34px;margin-bottom:9px;display:block}
+.dz-t{font-size:14px;font-weight:500;margin-bottom:3px;color:var(--ink2)}
+.dz-s{font-size:12px;color:#aaa}
+.or{display:flex;align-items:center;gap:10px;margin:.9rem 0;color:#ccc;font-size:11px}
+.or::before,.or::after{content:'';flex:1;height:1px;background:var(--b)}
+.fbtn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:10px;background:var(--ink2);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:500;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .18s}
+.fbtn:hover{background:var(--ink);box-shadow:var(--sh)}
+.fbadge{display:none;align-items:center;gap:8px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:7px;padding:9px 12px;margin-top:9px;font-size:12px}
+.fbadge.on{display:flex}
+.fn{flex:1;color:#166534;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fcl{background:none;border:none;cursor:pointer;color:#aaa;font-size:15px;line-height:1}
+
+/* URL */
+.url-row{display:flex;gap:8px}
+.url-f{flex:1;padding:11px 14px;font-size:13px;font-family:'DM Mono',monospace;border:1.5px solid var(--bm);border-radius:8px;background:var(--paper);color:var(--ink);outline:none;transition:border-color .2s;min-width:0}
+.url-f:focus{border-color:var(--gold);background:var(--white)}
+.url-go{padding:11px 15px;background:var(--ink2);color:#fff;border:none;border-radius:8px;font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer;white-space:nowrap;transition:all .18s}
+.url-go:hover{background:var(--ink)}
+.url-go:disabled{opacity:.5;cursor:not-allowed}
+.url-hint{font-size:11px;color:#bbb;margin-top:7px;line-height:1.6}
+.url-st{display:none;align-items:center;gap:8px;margin-top:9px;padding:8px 12px;border-radius:7px;font-size:12px}
+.url-st.ld{display:flex;background:#fffbeb;border:1px solid #fde68a;color:#92400e}
+.url-st.ok{display:flex;background:#f0fdf4;border:1px solid #bbf7d0;color:#166534}
+.url-st.er{display:flex;background:#fff5f5;border:1px solid #fecaca;color:#991b1b}
+.spin{width:11px;height:11px;border:2px solid currentColor;border-top-color:transparent;border-radius:50%;animation:sp .7s linear infinite;flex-shrink:0}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+/* SETTINGS */
+.sets{padding:0 1.4rem;border-top:1px solid var(--b)}
+.sets-lbl{font-size:10px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:#bbb;margin:1rem 0 9px}
+.sg{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:9px}
+.si{display:flex;flex-direction:column;gap:4px}
+.sl{font-size:11px;color:#999}
+.ss{padding:7px 10px;border:1px solid var(--bm);border-radius:6px;background:var(--paper);font-size:12px;font-family:'DM Sans',sans-serif;color:var(--ink);outline:none;cursor:pointer;width:100%}
+.ss:focus{border-color:var(--gold)}
+.qi{width:100%;padding:9px 12px;border:1px solid var(--bm);border-radius:6px;background:var(--paper);font-size:12px;font-family:'DM Sans',sans-serif;color:var(--ink);resize:vertical;min-height:62px;outline:none;line-height:1.6;margin-bottom:9px}
+.qi:focus{border-color:var(--gold);background:var(--white)}
+
+/* SUBMIT */
+.sw{padding:1rem 1.4rem 1.4rem}
+.sb{width:100%;padding:13px;background:var(--ink2);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:500;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px}
+.sb:hover:not(:disabled){background:var(--ink);transform:translateY(-1px);box-shadow:var(--shl)}
+.sb:disabled{opacity:.45;cursor:not-allowed;transform:none}
+
+/* HISTORY */
+.hist{margin-top:1.75rem;max-width:680px;width:100%;text-align:left}
+.ht{font-size:11px;color:#bbb;letter-spacing:.08em;text-transform:uppercase;margin-bottom:9px;display:flex;align-items:center;justify-content:space-between}
+.hcl{background:none;border:none;color:#ccc;font-size:11px;cursor:pointer;font-family:'DM Sans',sans-serif}
+.hcl:hover{color:var(--red)}
+.hg{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:7px}
+.hi2{background:var(--white);border:1px solid var(--b);border-radius:8px;padding:10px 12px;cursor:pointer;transition:all .18s;overflow:hidden}
+.hi2:hover{border-color:var(--gold);box-shadow:var(--sh)}
+.hn{font-size:12px;font-weight:500;color:var(--ink2);margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hm{font-size:11px;color:#bbb;display:flex;gap:5px;align-items:center}
+.hbadge{background:var(--paper2);padding:1px 5px;border-radius:3px;font-size:10px}
+
+/* API KEY MODAL */
+.mo{position:fixed;inset:0;background:rgba(14,17,23,.52);z-index:500;display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+.mo.on{display:flex}
+.md{background:var(--white);border-radius:14px;padding:1.75rem;max-width:430px;width:calc(100% - 2rem);box-shadow:var(--shl);animation:mi .2s ease}
+@keyframes mi{from{transform:scale(.95);opacity:0}to{transform:scale(1);opacity:1}}
+.mh{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.1rem}
+.mt{font-size:16px;font-weight:500;font-family:'Playfair Display',serif}
+.mc{background:none;border:none;cursor:pointer;color:#bbb;font-size:20px;line-height:1}
+.mc:hover{color:var(--ink)}
+.md-desc{font-size:13px;color:#777;line-height:1.65;margin-bottom:1.1rem}
+.md-desc a{color:var(--blue);text-decoration:none}
+.md-desc a:hover{text-decoration:underline}
+.kr{display:flex;gap:8px;margin-bottom:9px}
+.ki{flex:1;padding:10px 13px;font-size:13px;font-family:'DM Mono',monospace;border:1.5px solid var(--bm);border-radius:8px;background:var(--paper);color:var(--ink);outline:none;min-width:0}
+.ki:focus{border-color:var(--gold)}
+.ks{padding:10px 15px;background:var(--ink2);color:#fff;border:none;border-radius:8px;font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer;white-space:nowrap}
+.ks:hover{background:var(--ink)}
+.kh{font-size:11px;color:#bbb;line-height:1.6}
+.kh.ok{color:var(--green)}
+
+/* PROGRESS VIEW */
+#pv{display:none;min-height:100vh;align-items:center;justify-content:center;flex-direction:column;padding:3rem;text-align:center;background:var(--paper)}
+#pv.on{display:flex}
+.pl{font-family:'Playfair Display',serif;font-size:18px;color:var(--gold-d);margin-bottom:2.5rem}
+.pl span{color:var(--gold)}
+.pr{position:relative;width:70px;height:70px;margin-bottom:1.5rem}
+.pr svg{transform:rotate(-90deg)}
+.rtr{fill:none;stroke:var(--paper2);stroke-width:4}
+.rfill{fill:none;stroke:var(--gold);stroke-width:4;stroke-linecap:round;stroke-dasharray:182;stroke-dashoffset:182;transition:stroke-dashoffset .5s ease}
+.rpulse{position:absolute;inset:0;border-radius:50%;border:2px solid var(--gold);animation:pulse 1.4s ease-in-out infinite;opacity:0}
+@keyframes pulse{0%,100%{transform:scale(1);opacity:0}50%{transform:scale(1.18);opacity:.22}}
+.rico{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:20px;animation:rr 2.5s linear infinite}
+@keyframes rr{to{transform:translate(-50%,-50%) rotate(360deg)}}
+.ph{font-family:'Playfair Display',serif;font-size:22px;margin-bottom:5px}
+.ps{font-size:13px;color:#999;margin-bottom:1.5rem;min-height:18px}
+.stps{display:flex;flex-direction:column;gap:5px;max-width:310px;width:100%;text-align:left}
+.stp{display:flex;align-items:center;gap:9px;padding:8px 11px;border-radius:7px;font-size:12px;color:#ccc;transition:all .35s}
+.stp.dn{color:var(--green);background:#f0fdf4}
+.stp.ac{color:var(--ink2);background:#fdf9ee;font-weight:500}
+.sd{width:6px;height:6px;border-radius:50%;background:#ddd;flex-shrink:0;transition:all .3s}
+.stp.dn .sd{background:var(--green)}
+.stp.ac .sd{background:var(--gold);box-shadow:0 0 0 3px #f0d89870}
+.stp.dn .sc{display:inline}.sc{display:none}
+.stp.dn .sd{display:none}
+#sc{margin-top:1.25rem;font-size:11px;color:#ccc;font-family:'DM Mono',monospace;min-height:16px}
+
+/* RESULT VIEW */
+#rv{display:none;flex-direction:column;height:100vh}
+#rv.on{display:flex}
+.rn{background:var(--ink2);color:#fff;padding:0 1.5rem;display:flex;align-items:center;justify-content:space-between;height:52px;flex-shrink:0;gap:1rem;z-index:100}
+.rn-l{display:flex;align-items:center;gap:12px;min-width:0}
+.rn-logo{font-family:'Playfair Display',serif;font-size:15px;color:var(--gold-l);white-space:nowrap}
+.rn-sep{width:1px;height:16px;background:rgba(255,255,255,.15);flex-shrink:0}
+.rn-t{font-size:12px;color:#94a3b8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.rn-a{display:flex;gap:6px;flex-shrink:0}
+.rbtn{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:#e2e8f0;padding:5px 11px;border-radius:5px;font-size:11px;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .18s;white-space:nowrap}
+.rbtn:hover{background:rgba(255,255,255,.15)}
+.rbtn.gd{background:var(--gold);color:var(--ink2);border-color:var(--gold);font-weight:500}
+.rbtn.gd:hover{background:var(--gold-l)}
+#rfw{flex:1;overflow:hidden}
+#rif{width:100%;height:100%;border:none;display:block}
+
+/* TOAST */
+.toast{position:fixed;bottom:1.5rem;right:1.5rem;background:var(--ink2);color:#fff;padding:10px 16px;border-radius:7px;font-size:12px;transform:translateY(80px);opacity:0;transition:all .28s;z-index:9999;max-width:300px;box-shadow:var(--shl)}
+.toast.on{transform:translateY(0);opacity:1}
+.toast.er{background:var(--red)}
+.toast.ok{background:var(--green)}
+
+@media(max-width:600px){
+  .hd{padding:1rem}
+  .sg{grid-template-columns:1fr}
+  .rn-t,.rn-sep{display:none}
+  .hg{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- UPLOAD VIEW -->
+<div id="uv">
+  <div class="hd">
+    <div class="logo">Paper<span>Lens</span></div>
+    <div class="hd-r">
+      <span class="hd-tag">AI Literature Annotation</span>
+      <button class="key-btn" id="kbtn" onclick="openModal()">
+        <span class="kd" id="kd"></span>API Key
+      </button>
+    </div>
+  </div>
+
+  <div class="hero">
+    <div class="hi">
+      <div class="ey"><div class="eyd"></div>由 Claude AI 驱动 · 双栏批注系统</div>
+      <h1>让文献阅读<br>拥有<em>结构与深度</em></h1>
+      <p class="sub">上传学术论文 PDF 或粘贴文献链接，自动生成专业双栏批注——逻辑分析、核心论点、证据质量、论证漏洞，一键呈现。</p>
+
+      <div class="uc">
+        <div class="tabs">
+          <button class="tab on" onclick="switchTab('file')" id="t-file"><span>📄</span>本地上传</button>
+          <button class="tab" onclick="switchTab('url')" id="t-url"><span>🔗</span>输入链接</button>
+        </div>
+
+        <!-- FILE -->
+        <div class="pnl on" id="p-file">
+          <div class="dz" id="dz">
+            <input type="file" id="fi" accept=".pdf">
+            <span class="dz-ico">📋</span>
+            <div class="dz-t">拖拽 PDF 到这里</div>
+            <div class="dz-s">支持 .pdf 格式 · 最大 50 MB</div>
+          </div>
+          <div class="or">或</div>
+          <button class="fbtn" onclick="document.getElementById('fi').click()"><span>📁</span>浏览本地文件</button>
+          <div class="fbadge" id="fb">
+            <span style="font-size:18px">📄</span>
+            <span class="fn" id="fn"></span>
+            <button class="fcl" onclick="clearFile(event)">✕</button>
+          </div>
+        </div>
+
+        <!-- URL -->
+        <div class="pnl" id="p-url">
+          <div class="url-row">
+            <input type="url" class="url-f" id="urli" placeholder="https://arxiv.org/pdf/2212.12000.pdf" onkeydown="if(event.key==='Enter')fetchUrl()">
+            <button class="url-go" id="ugbtn" onclick="fetchUrl()">获取</button>
+          </div>
+          <p class="url-hint">支持 arXiv、bioRxiv 等 PDF 直链，系统自动下载并保留原文件</p>
+          <div class="url-st" id="ust">
+            <span class="spin" id="uspin"></span>
+            <span id="ustxt"></span>
+          </div>
+        </div>
+
+        <!-- SETTINGS -->
+        <div class="sets">
+          <div class="sets-lbl">分析设置</div>
+          <div class="sg">
+            <div class="si">
+              <div class="sl">批注模式</div>
+              <select class="ss" id="ms" onchange="onModeChange()">
+                <option value="logic">纯逻辑分析版（Prompt B）</option>
+                <option value="question">有 Question 清单版（Prompt A）</option>
+              </select>
+            </div>
+            <div class="si">
+              <div class="sl">批注语言</div>
+              <select class="ss" id="ls">
+                <option value="zh">中文</option>
+                <option value="en">English</option>
+              </select>
+            </div>
+          </div>
+          <div id="qw" style="display:none">
+            <div class="sl" style="margin-bottom:5px">自定义阅读问题（每行一个，留空则自动生成）</div>
+            <textarea class="qi" id="qi" placeholder="例：&#10;GraphCast 相比 NWP 的核心优势是什么？&#10;模型如何处理全球空间不均匀问题？"></textarea>
+          </div>
+        </div>
+
+        <div class="sw">
+          <button class="sb" id="subbtn" onclick="startAnalysis()">
+            <span style="font-size:16px">✦</span>开始分析
+          </button>
+        </div>
+      </div><!-- /uc -->
+
+      <!-- HISTORY -->
+      <div class="hist" id="hist" style="display:none">
+        <div class="ht">
+          <span>最近分析</span>
+          <button class="hcl" onclick="clearHistory()">清除全部</button>
+        </div>
+        <div class="hg" id="hg"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- API KEY MODAL -->
+<div class="mo" id="mo" onclick="if(event.target===this)closeModal()">
+  <div class="md">
+    <div class="mh">
+      <span class="mt">设置 Anthropic API Key</span>
+      <button class="mc" onclick="closeModal()">×</button>
+    </div>
+    <p class="md-desc">
+      PaperLens 直接从浏览器调用 Anthropic API，您的 Key 仅存储在本地浏览器中，不经过任何中间服务器。<br><br>
+      还没有 Key？前往 <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a> 申请。
+    </p>
+    <div class="kr">
+      <input type="password" class="ki" id="ki" placeholder="sk-ant-api03-…" spellcheck="false">
+      <button class="ks" onclick="saveKey()">保存</button>
+    </div>
+    <p class="kh" id="kh">Key 保存在浏览器 localStorage，关闭页面后仍有效。</p>
+  </div>
+</div>
+
+<!-- PROGRESS VIEW -->
+<div id="pv">
+  <div class="pl">Paper<span>Lens</span></div>
+  <div class="pr">
+    <svg width="70" height="70" viewBox="0 0 70 70">
+      <circle class="rtr" cx="35" cy="35" r="29"/>
+      <circle class="rfill" id="rfill" cx="35" cy="35" r="29"/>
+    </svg>
+    <div class="rpulse"></div>
+    <div class="rico">✦</div>
+  </div>
+  <div class="ph">正在分析文献…</div>
+  <div class="ps" id="ps">初始化中</div>
+  <div class="stps">
+    <div class="stp" id="s0"><span class="sd"></span><span class="sc">✓</span>读取文件内容</div>
+    <div class="stp" id="s1"><span class="sd"></span><span class="sc">✓</span>解析论文结构</div>
+    <div class="stp" id="s2"><span class="sd"></span><span class="sc">✓</span>Claude 生成批注</div>
+    <div class="stp" id="s3"><span class="sd"></span><span class="sc">✓</span>渲染双栏页面</div>
+  </div>
+  <div id="sc"></div>
+</div>
+
+<!-- RESULT VIEW -->
+<div id="rv">
+  <nav class="rn">
+    <div class="rn-l">
+      <span class="rn-logo">PaperLens</span>
+      <span class="rn-sep"></span>
+      <span class="rn-t" id="rnt">—</span>
+    </div>
+    <div class="rn-a">
+      <button class="rbtn" onclick="dlHTML()">⬇ 下载 HTML</button>
+      <button class="rbtn" id="dlpdf" style="display:none" onclick="dlPDF()">⬇ 保存 PDF</button>
+      <button class="rbtn gd" onclick="reset()">＋ 新论文</button>
+    </div>
+  </nav>
+  <div id="rfw"><iframe id="rif" sandbox="allow-scripts allow-same-origin allow-popups"></iframe></div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+/* ════════════════════════════════
+   STATE
+════════════════════════════════ */
+let selFile = null, inputMode = 'file';
+let urlB64 = null, urlTitle = '';
+let lastHTML = '', lastTitle = '', lastB64 = '';
+
+/* ════════════════════════════════
+   KEY MODAL
+════════════════════════════════ */
+const getKey = () => localStorage.getItem('pl_key') || '';
+function refreshKeyDot() { document.getElementById('kd').classList.toggle('on', !!getKey()); }
+function openModal() {
+  document.getElementById('ki').value = getKey();
+  document.getElementById('kh').textContent = 'Key 保存在浏览器 localStorage，关闭页面后仍有效。';
+  document.getElementById('kh').className = 'kh';
+  document.getElementById('mo').classList.add('on');
+}
+function closeModal() { document.getElementById('mo').classList.remove('on'); }
+function saveKey() {
+  const v = document.getElementById('ki').value.trim();
+  if (!v.startsWith('sk-')) {
+    document.getElementById('kh').textContent = '格式不正确，应以 sk- 开头';
+    document.getElementById('kh').className = 'kh';
+    return;
+  }
+  localStorage.setItem('pl_key', v);
+  refreshKeyDot();
+  document.getElementById('kh').textContent = '✓ 已保存';
+  document.getElementById('kh').className = 'kh ok';
+  setTimeout(closeModal, 800);
+}
+
+/* ════════════════════════════════
+   TABS
+════════════════════════════════ */
+function switchTab(t) {
+  inputMode = t;
+  ['file','url'].forEach(x => {
+    document.getElementById('t-'+x).classList.toggle('on', x===t);
+    document.getElementById('p-'+x).classList.toggle('on', x===t);
+  });
+}
+function onModeChange() {
+  document.getElementById('qw').style.display =
+    document.getElementById('ms').value === 'question' ? 'block' : 'none';
+}
+
+/* ════════════════════════════════
+   FILE INPUT
+════════════════════════════════ */
+const dz = document.getElementById('dz');
+const fi = document.getElementById('fi');
+dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('ov'); });
+dz.addEventListener('dragleave', e => { if (!dz.contains(e.relatedTarget)) dz.classList.remove('ov'); });
+dz.addEventListener('drop', e => {
+  e.preventDefault(); dz.classList.remove('ov');
+  const f = e.dataTransfer.files[0];
+  if (f && (f.type === 'application/pdf' || f.name.endsWith('.pdf'))) setFile(f);
+  else toast('请上传 PDF 文件', 'er');
+});
+fi.addEventListener('change', e => { if (e.target.files[0]) setFile(e.target.files[0]); });
+function setFile(f) {
+  selFile = f;
+  document.getElementById('fn').textContent = f.name + '  (' + (f.size/1024/1024).toFixed(1) + ' MB)';
+  document.getElementById('fb').classList.add('on');
+}
+function clearFile(e) {
+  e && e.stopPropagation();
+  selFile = null; fi.value = '';
+  document.getElementById('fb').classList.remove('on');
+}
+
+/* ════════════════════════════════
+   URL FETCH
+════════════════════════════════ */
+async function fetchUrl() {
+  const url = document.getElementById('urli').value.trim();
+  if (!url.startsWith('http')) { toast('请输入有效的 URL', 'er'); return; }
+  const stEl = document.getElementById('ust');
+  const txtEl = document.getElementById('ustxt');
+  const spinEl = document.getElementById('uspin');
+  const btn = document.getElementById('ugbtn');
+  stEl.className = 'url-st ld'; spinEl.style.display = '';
+  txtEl.textContent = '正在下载 PDF…'; btn.disabled = true; urlB64 = null;
+  try {
+    const b64 = await fetchPDFb64(url);
+    urlB64 = b64; lastB64 = b64;
+    urlTitle = url.split('/').pop().split('?')[0].replace(/\.pdf$/i,'') || 'paper';
+    stEl.className = 'url-st ok'; spinEl.style.display = 'none';
+    txtEl.textContent = '✓ PDF 已就绪（约 ' + Math.round(b64.length * 0.75 / 1024) + ' KB）';
+    document.getElementById('dlpdf').style.display = '';
+  } catch(err) {
+    stEl.className = 'url-st er'; spinEl.style.display = 'none';
+    txtEl.textContent = '✗ ' + err.message;
+  } finally { btn.disabled = false; }
+}
+
+async function fetchPDFb64(rawUrl) {
+  let url = rawUrl.replace('arxiv.org/abs/', 'arxiv.org/pdf/');
+  const tries = [
+    url,
+    'https://corsproxy.io/?' + encodeURIComponent(url),
+    'https://api.allorigins.win/raw?url=' + encodeURIComponent(url),
+  ];
+  for (const u of tries) {
+    try {
+      const r = await fetch(u, { signal: AbortSignal.timeout(25000) });
+      if (!r.ok) continue;
+      const blob = await r.blob();
+      if (blob.size < 3000) continue;
+      const ct = r.headers.get('content-type') || '';
+      if (!ct.includes('pdf') && blob.size < 15000) continue;
+      return blobToB64(blob);
+    } catch(e) { continue; }
+  }
+  throw new Error('无法下载 PDF，请检查链接格式或改用本地上传');
+}
+
+const blobToB64 = b => new Promise((res,rej)=>{
+  const r=new FileReader(); r.onload=()=>res(r.result.split(',')[1]); r.onerror=rej; r.readAsDataURL(b);
+});
+const fileToB64 = f => new Promise((res,rej)=>{
+  const r=new FileReader(); r.onload=()=>res(r.result.split(',')[1]); r.onerror=rej; r.readAsDataURL(f);
+});
+
+/* ════════════════════════════════
+   PROGRESS
+════════════════════════════════ */
+const SMSG = ['正在读取 PDF 内容…','提取论文结构与章节…','Claude 正在生成批注，约需 1-2 分钟…','渲染双栏批注页面…'];
+const SOFF = [182, 136, 91, 45, 0];
+function setStep(i) {
+  for(let j=0;j<4;j++){
+    const el=document.getElementById('s'+j);
+    el.classList.remove('ac','dn');
+    if(j<i) el.classList.add('dn');
+    else if(j===i) el.classList.add('ac');
+  }
+  document.getElementById('rfill').style.strokeDashoffset = SOFF[i] || 0;
+  document.getElementById('ps').textContent = SMSG[i] || '';
+}
+
+/* ════════════════════════════════
+   BUILD PROMPTS
+════════════════════════════════ */
+function buildSys(mode, lang, questions) {
+  const L = lang==='zh'
+    ? '请全程使用中文撰写所有批注、标签、说明文字（论文原文段落保持原语言不变）。'
+    : 'Write all annotations, labels, and UI text in English.';
+
+  const STYLE = `
+DESIGN (follow exactly):
+- Google Fonts: Lora (body/serif), IBM Plex Sans (UI) — import in <head>
+- Colors: --navy:#0f2340; --cream:#faf8f3; --paper:#f4f1ea; --gold:#c9a84c; --white:#fff
+- body: background var(--cream); font-family IBM Plex Sans
+- Top nav: bg var(--navy), sticky, 52px tall, paper title + legend
+- Section nav: bg #1a3358, sticky below top nav, horizontal scrollable buttons, gold active underline
+- Content area: max-width 1240px, margin 0 auto, padding 1.5rem
+- Dual-column: CSS grid 1fr 1fr, gap 1.25rem, align-items start
+- Paper text cards: bg white, border 1px solid #e0dbd0, border-radius 8px, padding 14px 16px
+- Paper text: font-family Lora, font-size 14px, line-height 1.85, color #2a2a2a
+- Annotation cards: left-border 4px solid, border-radius 8px, padding 14px 16px, font-size 13px
+- Bottom overview: bg var(--navy), color white, border-radius 12px, padding 1.5rem 2rem
+- Responsive: @media(max-width:768px) single column
+- Include data-paper-title="EXTRACTED TITLE" on <body>
+- Smooth scrolling, sticky navs work correctly`;
+
+  if (mode === 'logic') {
+    return `You are an expert academic paper annotator specializing in argument structure analysis.
+${L}
+
+OUTPUT: A complete self-contained HTML page. Start with <!DOCTYPE html>. Output NOTHING else — no markdown, no explanation.
+
+ANNOTATION CONTENT FOR EACH MAJOR SECTION:
+Left column — original paper text with inline <mark> highlights:
+  <mark class="hl-thesis"> = yellow, core claims / thesis
+  <mark class="hl-term">   = pink/red, key defined terms
+  <mark class="hl-evid">   = blue, data / statistics / results
+  <mark class="hl-ctr">    = green, concessions / rebuttals
+  <mark class="hl-meth">   = purple, methodology choices
+
+Right column — annotation cards (1-3 per paragraph group):
+  • Type badge: 核心论点 / 关键概念 / 实证证据 / 让步反驳 / 方法论
+  • 2-4 sentence analysis in target language
+  • "逻辑位置" line: where this fits in overall argument chain
+  • "论证技巧" line: notable technique or potential gap
+
+PAGE STRUCTURE:
+1. TOP NAV: paper title, authors, year | 5-dot legend
+2. SECTION NAV: buttons for each paper section
+3. ARGUMENT FLOW CHAIN (visual): 问题 → 论点 → 证据 → 反驳 → 结论
+4. DUAL-COLUMN BLOCKS for each section
+5. BOTTOM OVERVIEW (navy):
+   - 核心主张（一句话）
+   - 全文论证骨架（chain visualization)
+   - 最强论据
+   - 最薄弱处/最大局限
+   - 论证技巧总结
+
+MARK STYLES (in <style>):
+mark.hl-thesis{background:#fff9c4;border-radius:3px;padding:1px 3px}
+mark.hl-term{background:#fce4ec;border-radius:3px;padding:1px 3px}
+mark.hl-evid{background:#e3f2fd;border-radius:3px;padding:1px 3px}
+mark.hl-ctr{background:#e8f5e9;border-radius:3px;padding:1px 3px}
+mark.hl-meth{background:#ede7f6;border-radius:3px;padding:1px 3px}
+
+${STYLE}
+Cover ALL major sections of the paper thoroughly.`;
+
+  } else {
+    const qBlock = questions
+      ? `USE THESE READING QUESTIONS:\n${questions}`
+      : `AUTO-GENERATE 5 reading questions covering: (1) core contribution vs prior work, (2) methodology & key design choices, (3) evidence validity & comparison fairness, (4) generalization & applications, (5) limitations & future directions. Make them analytical, not just factual.`;
+
+    return `You are an expert academic paper annotator.
+${L}
+
+OUTPUT: A complete self-contained HTML page. Start with <!DOCTYPE html>. Output NOTHING else.
+
+${qBlock}
+
+Question colors: Q1=#7c3aed(purple) Q2=#0369a1(blue) Q3=#b45309(amber) Q4=#15803d(green) Q5=#be123c(red) Q6=#0f766e(teal)
+
+Left column marks: <mark class="q1">, <mark class="q2">, etc. matching question color
+Right column cards: colored left-border, Q-number badge, paragraph function, how it answers the question, analysis depth
+
+PAGE STRUCTURE:
+1. TOP NAV: paper title, Q-count badge
+2. SECTION NAV
+3. QUESTION LIST PANEL: colorful cards Q1-Q5(+), each with question text
+4. DUAL-COLUMN BLOCKS per section
+5. BOTTOM WORKSHEET: grid of answer-scaffold cards per question:
+   each has: question text, 核心论点, 关键证据, 潜在反驳/局限
+
+MARK STYLES:
+mark.q1{background:#ede9fe;border-radius:3px;padding:1px 3px}
+mark.q2{background:#dbeafe;border-radius:3px;padding:1px 3px}
+mark.q3{background:#fef9c3;border-radius:3px;padding:1px 3px}
+mark.q4{background:#dcfce7;border-radius:3px;padding:1px 3px}
+mark.q5{background:#ffe4e6;border-radius:3px;padding:1px 3px}
+mark.q6{background:#ccfbf1;border-radius:3px;padding:1px 3px}
+
+${STYLE}
+Cover ALL major sections thoroughly.`;
+  }
+}
+
+/* ════════════════════════════════
+   MAIN ANALYSIS
+════════════════════════════════ */
+async function startAnalysis() {
+  const key = getKey();
+  if (!key) { openModal(); toast('请先设置 API Key', 'er'); return; }
+  const mode = document.getElementById('ms').value;
+  const lang = document.getElementById('ls').value;
+  const qs = document.getElementById('qi').value.trim();
+
+  if (inputMode === 'file') {
+    if (!selFile) { toast('请先选择 PDF 文件', 'er'); return; }
+  } else {
+    if (!urlB64) {
+      const u = document.getElementById('urli').value.trim();
+      if (!u) { toast('请输入链接并点击「获取」', 'er'); return; }
+      toast('请先点击「获取」下载 PDF', 'er'); return;
+    }
+  }
+
+  // switch to progress
+  document.getElementById('uv').style.display = 'none';
+  document.getElementById('pv').classList.add('on');
+  setStep(0);
+
+  try {
+    let b64, title;
+    if (inputMode === 'file') {
+      b64 = await fileToB64(selFile); title = selFile.name.replace(/\.pdf$/i,''); lastB64 = b64;
+    } else {
+      b64 = urlB64; title = urlTitle;
+    }
+
+    setStep(1); await sleep(250);
+    setStep(2);
+
+    const sys = buildSys(mode, lang, qs);
+    const html = await callClaude(key, sys, b64, mode, lang, qs);
+
+    setStep(3); await sleep(350);
+
+    const tm = html.match(/data-paper-title="([^"]+)"/);
+    if (tm) title = tm[1];
+
+    showResult(html, title);
+    saveHist(title, mode, lang, html);
+  } catch(err) {
+    console.error(err);
+    document.getElementById('pv').classList.remove('on');
+    document.getElementById('uv').style.display = 'flex';
+    toast('分析失败：' + (err.message || err), 'er');
+  }
+}
+
+/* ════════════════════════════════
+   CLAUDE STREAMING
+════════════════════════════════ */
+async function callClaude(key, sys, b64, mode, lang, qs) {
+  const scEl = document.getElementById('sc');
+  const resp = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': key,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true'
+    },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 16000,
+      stream: true,
+      system: sys,
+      messages: [{
+        role: 'user',
+        content: [
+          { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: b64 } },
+          { type: 'text', text:
+`Analyze this paper and output the complete dual-column annotation HTML page.
+Mode: ${mode==='logic'?'Pure Logic Analysis':'Question Checklist'}
+Language: ${lang==='zh'?'Chinese annotations':'English'}
+${qs?'Custom questions:\n'+qs:''}
+Output ONLY complete HTML starting with <!DOCTYPE html>. Be thorough — cover all paper sections.` }
+        ]
+      }]
+    })
+  });
+
+  if (!resp.ok) {
+    let msg = `HTTP ${resp.status}`;
+    try { const e = await resp.json(); msg = e.error?.message || msg; } catch(x){}
+    if (resp.status === 401) msg = 'API Key 无效，请重新设置';
+    else if (resp.status === 429) msg = '请求频率超限，请稍后重试';
+    else if (resp.status === 529) msg = '服务繁忙，请稍后重试';
+    throw new Error(msg);
+  }
+
+  const reader = resp.body.getReader();
+  const dec = new TextDecoder();
+  let full = '', chars = 0;
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    const lines = dec.decode(value, { stream: true }).split('\n');
+    for (const line of lines) {
+      if (!line.startsWith('data: ')) continue;
+      const d = line.slice(6).trim();
+      if (!d || d === '[DONE]') continue;
+      try {
+        const p = JSON.parse(d);
+        if (p.type === 'content_block_delta' && p.delta?.type === 'text_delta') {
+          full += p.delta.text;
+          chars += p.delta.text.length;
+          if (chars % 300 < p.delta.text.length)
+            scEl.textContent = '已生成 ' + chars.toLocaleString() + ' 字符…';
+        }
+      } catch(e) {}
+    }
+  }
+
+  if (!full.trim()) throw new Error('API 返回空响应，请重试');
+
+  // strip markdown fences if present
+  let html = full.trim();
+  const fenceMatch = html.match(/```(?:html)?\s*([\s\S]+?)```/);
+  if (fenceMatch) html = fenceMatch[1].trim();
+  if (html.startsWith('```html')) html = html.slice(7).trim();
+  if (html.startsWith('```')) html = html.slice(3).trim();
+  if (html.endsWith('```')) html = html.slice(0,-3).trim();
+
+  if (!html.includes('<html') && !html.startsWith('<!')) throw new Error('生成内容格式异常，请重试');
+  return html;
+}
+
+/* ════════════════════════════════
+   SHOW RESULT
+════════════════════════════════ */
+function showResult(html, title) {
+  lastHTML = html; lastTitle = title;
+  document.getElementById('pv').classList.remove('on');
+  document.getElementById('rnt').textContent = title;
+  const iframe = document.getElementById('rif');
+  const doc = iframe.contentDocument || iframe.contentWindow.document;
+  doc.open(); doc.write(html); doc.close();
+
+  // Make iframe fill remaining height
+  function resizeIframe() {
+    const navH = document.querySelector('.rn').offsetHeight;
+    iframe.style.height = (window.innerHeight - navH) + 'px';
+  }
+  resizeIframe();
+  window.addEventListener('resize', resizeIframe);
+
+  document.getElementById('rv').classList.add('on');
+  toast('批注生成完成！', 'ok');
+}
+
+/* ════════════════════════════════
+   DOWNLOAD
+════════════════════════════════ */
+function dlHTML() {
+  if (!lastHTML) return;
+  const b = new Blob([lastHTML], { type: 'text/html;charset=utf-8' });
+  const u = URL.createObjectURL(b);
+  const a = document.createElement('a');
+  a.href = u; a.download = safeName(lastTitle) + '_annotation.html';
+  a.click(); URL.revokeObjectURL(u);
+  toast('HTML 已下载');
+}
+function dlPDF() {
+  if (!lastB64) return;
+  const bc = atob(lastB64), ba = new Uint8Array(bc.length);
+  for (let i=0;i<bc.length;i++) ba[i]=bc.charCodeAt(i);
+  const b = new Blob([ba], { type: 'application/pdf' });
+  const u = URL.createObjectURL(b);
+  const a = document.createElement('a');
+  a.href = u; a.download = safeName(lastTitle) + '.pdf';
+  a.click(); URL.revokeObjectURL(u);
+  toast('PDF 已下载');
+}
+function safeName(s) { return (s||'paper').replace(/[^\w\u4e00-\u9fa5\- ]/g,'_').trim().slice(0,60); }
+
+/* ════════════════════════════════
+   HISTORY
+════════════════════════════════ */
+function saveHist(title, mode, lang, html) {
+  try {
+    let h = JSON.parse(localStorage.getItem('pl_hist')||'[]');
+    h.unshift({ id: Date.now(), title, mode, lang, html, date: new Date().toLocaleDateString('zh-CN') });
+    h = h.slice(0, 8);
+    localStorage.setItem('pl_hist', JSON.stringify(h));
+    renderHist();
+  } catch(e) {}
+}
+function renderHist() {
+  try {
+    const h = JSON.parse(localStorage.getItem('pl_hist')||'[]');
+    const sec = document.getElementById('hist');
+    const g = document.getElementById('hg');
+    if (!h.length) { sec.style.display='none'; return; }
+    sec.style.display='block';
+    g.innerHTML = h.map(x=>`
+      <div class="hi2" onclick="loadHist(${x.id})">
+        <div class="hn" title="${x.title}">${x.title}</div>
+        <div class="hm"><span>${x.date}</span><span class="hbadge">${x.mode==='logic'?'逻辑':'Q清单'}</span><span>${x.lang==='zh'?'中':'EN'}</span></div>
+      </div>`).join('');
+  } catch(e){}
+}
+function loadHist(id) {
+  try {
+    const h = JSON.parse(localStorage.getItem('pl_hist')||'[]');
+    const x = h.find(i=>i.id===id);
+    if (!x) return;
+    showResult(x.html, x.title);
+  } catch(e){}
+}
+function clearHistory() {
+  localStorage.removeItem('pl_hist');
+  renderHist();
+  toast('历史已清除');
+}
+
+/* ════════════════════════════════
+   RESET
+════════════════════════════════ */
+function reset() {
+  document.getElementById('rv').classList.remove('on');
+  document.getElementById('uv').style.display='flex';
+  document.getElementById('pv').classList.remove('on');
+  document.getElementById('sc').textContent='';
+  clearFile();
+  urlB64=null;
+  document.getElementById('urli').value='';
+  document.getElementById('ust').className='url-st';
+  document.getElementById('dlpdf').style.display='none';
+}
+
+/* ════════════════════════════════
+   UTILS
+════════════════════════════════ */
+function toast(msg, type='') {
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.className='toast on'+(type?' '+type:'');
+  clearTimeout(window._tt);
+  window._tt=setTimeout(()=>{t.className='toast';},3200);
+}
+function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
+
+document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeModal(); });
+
+/* INIT */
+refreshKeyDot();
+renderHist();
+</script>
+</body>
+</html>

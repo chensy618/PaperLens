@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GraphCast 论文批注 · 纯逻辑分析版</title>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;1,400&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #0f2340;
+    --navy-light: #1a3358;
+    --cream: #faf8f3;
+    --paper: #f4f1ea;
+    --card-bg: #ffffff;
+    --yellow: #f5c842;
+    --yellow-bg: #fffde8;
+    --red: #e53935;
+    --red-bg: #fff3f2;
+    --blue: #1976d2;
+    --blue-bg: #e8f1fd;
+    --green: #2e7d32;
+    --green-bg: #edf7ee;
+    --purple: #6a1b9a;
+    --purple-bg: #f5eeff;
+    --text: #1a1a1a;
+    --text-muted: #555;
+    --border: #e0dbd0;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'IBM Plex Sans', sans-serif; background: var(--cream); color: var(--text); }
+
+  /* NAV */
+  .top-nav {
+    background: var(--navy);
+    color: white;
+    padding: 0 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 56px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    gap: 1rem;
+  }
+  .nav-title { font-size: 15px; font-weight: 600; letter-spacing: 0.02em; white-space: nowrap; }
+  .nav-sub { font-size: 12px; color: #94a3b8; }
+  .legend { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .legend-item { display: flex; align-items: center; gap: 4px; font-size: 11px; color: #cbd5e1; white-space: nowrap; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .dot-yellow { background: var(--yellow); }
+  .dot-red { background: var(--red); }
+  .dot-blue { background: var(--blue); }
+  .dot-green { background: var(--green); }
+  .dot-purple { background: var(--purple); }
+
+  /* SECTION NAV */
+  .section-nav {
+    background: var(--navy-light);
+    display: flex;
+    gap: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+    position: sticky;
+    top: 56px;
+    z-index: 99;
+  }
+  .section-nav::-webkit-scrollbar { display: none; }
+  .sec-btn {
+    background: none;
+    border: none;
+    color: #94a3b8;
+    padding: 10px 16px;
+    font-size: 12px;
+    font-family: 'IBM Plex Sans', sans-serif;
+    cursor: pointer;
+    white-space: nowrap;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+  }
+  .sec-btn:hover, .sec-btn.active { color: white; border-bottom-color: var(--yellow); }
+
+  /* MAIN LAYOUT */
+  .main { max-width: 1300px; margin: 0 auto; padding: 2rem 1.5rem; }
+
+  /* META */
+  .meta-card {
+    background: var(--navy);
+    color: white;
+    border-radius: 12px;
+    padding: 1.5rem 2rem;
+    margin-bottom: 2rem;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 1rem;
+    align-items: start;
+  }
+  .meta-title { font-family: 'Lora', serif; font-size: 20px; margin-bottom: 6px; line-height: 1.4; }
+  .meta-authors { font-size: 12px; color: #94a3b8; margin-bottom: 10px; }
+  .meta-tags { display: flex; gap: 6px; flex-wrap: wrap; }
+  .tag { background: rgba(255,255,255,0.1); padding: 3px 10px; border-radius: 20px; font-size: 11px; }
+  .meta-stats { display: flex; flex-direction: column; gap: 6px; align-items: flex-end; }
+  .stat-pill { background: var(--yellow); color: var(--navy); padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+
+  /* LOGIC OVERVIEW */
+  .logic-overview {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 2rem;
+  }
+  .logic-overview h3 { font-size: 13px; color: var(--text-muted); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.08em; }
+  .logic-chain {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    font-size: 13px;
+  }
+  .chain-node {
+    background: var(--paper);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 5px 10px;
+    color: var(--text);
+  }
+  .chain-arrow { color: #999; font-size: 16px; }
+
+  /* DUAL COLUMN */
+  .section-block { margin-bottom: 3rem; }
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 1rem;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--navy);
+  }
+  .section-num { background: var(--navy); color: white; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; flex-shrink: 0; }
+  .section-title { font-size: 16px; font-weight: 600; color: var(--navy); }
+  .section-role { font-size: 12px; color: var(--text-muted); margin-left: auto; background: var(--paper); padding: 2px 8px; border-radius: 4px; }
+
+  .dual-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+    align-items: start;
+  }
+
+  /* PAPER TEXT (LEFT) */
+  .paper-col { display: flex; flex-direction: column; gap: 12px; }
+  .para-block {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+  }
+  .para-text {
+    font-family: 'Lora', serif;
+    font-size: 14px;
+    line-height: 1.75;
+    color: #2a2a2a;
+  }
+  mark.thesis { background: #fff9c4; border-radius: 3px; padding: 1px 2px; }
+  mark.term { background: #fce4ec; border-radius: 3px; padding: 1px 2px; }
+  mark.evidence { background: #e3f2fd; border-radius: 3px; padding: 1px 2px; }
+  mark.counter { background: #e8f5e9; border-radius: 3px; padding: 1px 2px; }
+  mark.method { background: #ede7f6; border-radius: 3px; padding: 1px 2px; }
+
+  /* ANNOTATION (RIGHT) */
+  .anno-col { display: flex; flex-direction: column; gap: 12px; }
+  .anno-card {
+    border-radius: 8px;
+    padding: 14px 16px;
+    border-left: 4px solid;
+    font-size: 13px;
+    line-height: 1.6;
+  }
+  .anno-card.thesis { background: var(--yellow-bg); border-color: var(--yellow); }
+  .anno-card.term { background: var(--red-bg); border-color: var(--red); }
+  .anno-card.evidence { background: var(--blue-bg); border-color: var(--blue); }
+  .anno-card.counter { background: var(--green-bg); border-color: var(--green); }
+  .anno-card.method { background: var(--purple-bg); border-color: var(--purple); }
+
+  .anno-type {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+    display: block;
+  }
+  .anno-card.thesis .anno-type { color: #9a6c00; }
+  .anno-card.term .anno-type { color: var(--red); }
+  .anno-card.evidence .anno-type { color: var(--blue); }
+  .anno-card.counter .anno-type { color: var(--green); }
+  .anno-card.method .anno-type { color: var(--purple); }
+
+  .anno-content { color: var(--text); }
+  .logic-pos { font-size: 11px; color: var(--text-muted); margin-top: 8px; font-style: italic; }
+
+  /* BOTTOM OVERVIEW */
+  .bottom-overview {
+    background: var(--navy);
+    color: white;
+    border-radius: 12px;
+    padding: 1.5rem 2rem;
+    margin-top: 2rem;
+  }
+  .bottom-overview h3 { font-size: 14px; color: var(--yellow); margin-bottom: 1rem; letter-spacing: 0.05em; text-transform: uppercase; }
+  .overview-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; }
+  .ov-item { background: rgba(255,255,255,0.07); border-radius: 8px; padding: 12px 14px; }
+  .ov-label { font-size: 11px; color: #94a3b8; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.05em; }
+  .ov-text { font-size: 13px; color: #e2e8f0; line-height: 1.5; }
+
+  .author-line {
+    font-size: 12px;
+    color: #94a3b8;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(255,255,255,0.1);
+  }
+  .strongest { background: rgba(245,200,66,0.15); border-left: 3px solid var(--yellow); border-radius: 4px; padding: 10px 14px; margin-top: 1rem; font-size: 13px; color: #e2e8f0; }
+  .weakest { background: rgba(229,57,53,0.1); border-left: 3px solid var(--red); border-radius: 4px; padding: 10px 14px; margin-top: 8px; font-size: 13px; color: #e2e8f0; }
+  .sw-label { font-size: 11px; font-weight: 600; margin-bottom: 4px; }
+  .sw-label.s { color: var(--yellow); }
+  .sw-label.w { color: #ef9a9a; }
+
+  @media (max-width: 768px) {
+    .dual-col { grid-template-columns: 1fr; }
+    .top-nav { flex-wrap: wrap; height: auto; padding: 10px 1rem; }
+    .legend { display: none; }
+    .meta-card { grid-template-columns: 1fr; }
+    .meta-stats { align-items: flex-start; }
+  }
+</style>
+</head>
+<body>
+
+<!-- TOP NAV -->
+<nav class="top-nav">
+  <div>
+    <div class="nav-title">GraphCast · 纯逻辑分析版</div>
+    <div class="nav-sub">Lam et al., Science 382, 2023</div>
+  </div>
+  <div class="legend">
+    <div class="legend-item"><div class="dot dot-yellow"></div>核心论点/thesis</div>
+    <div class="legend-item"><div class="dot dot-red"></div>关键概念/术语</div>
+    <div class="legend-item"><div class="dot dot-blue"></div>实证证据/数据</div>
+    <div class="legend-item"><div class="dot dot-green"></div>让步/反驳处理</div>
+    <div class="legend-item"><div class="dot dot-purple"></div>方法论说明</div>
+  </div>
+</nav>
+
+<!-- SECTION NAV -->
+<div class="section-nav">
+  <button class="sec-btn active" onclick="scrollTo('#s1')">§1 引言与问题</button>
+  <button class="sec-btn" onclick="scrollTo('#s2')">§2 GraphCast介绍</button>
+  <button class="sec-btn" onclick="scrollTo('#s3')">§3 模型架构</button>
+  <button class="sec-btn" onclick="scrollTo('#s4')">§4 验证结果</button>
+  <button class="sec-btn" onclick="scrollTo('#s5')">§5 极端事件预测</button>
+  <button class="sec-btn" onclick="scrollTo('#s6')">§6 局限与结论</button>
+</div>
+
+<div class="main">
+
+  <!-- META -->
+  <div class="meta-card">
+    <div>
+      <div class="meta-title">Learning Skillful Medium-Range Global Weather Forecasting</div>
+      <div class="meta-authors">Remi Lam, Alvaro Sanchez-Gonzalez, Matthew Willson et al. · Google DeepMind · Science 2023</div>
+      <div class="meta-tags">
+        <span class="tag">机器学习</span>
+        <span class="tag">天气预报</span>
+        <span class="tag">图神经网络</span>
+        <span class="tag">ERA5再分析数据</span>
+        <span class="tag">GraphCast</span>
+      </div>
+    </div>
+    <div class="meta-stats">
+      <div class="stat-pill">超越HRES 90.3%</div>
+      <div style="font-size:12px;color:#94a3b8;text-align:right;margin-top:6px;">1380个验证目标</div>
+    </div>
+  </div>
+
+  <!-- LOGIC CHAIN -->
+  <div class="logic-overview">
+    <h3>全文论证骨架</h3>
+    <div class="logic-chain">
+      <span class="chain-node">问题：NWP无法利用历史数据</span>
+      <span class="chain-arrow">→</span>
+      <span class="chain-node">论点：MLWP可学习历史规律</span>
+      <span class="chain-arrow">→</span>
+      <span class="chain-node">证据：GraphCast设计与性能</span>
+      <span class="chain-arrow">→</span>
+      <span class="chain-node">反驳：不确定性/模糊问题</span>
+      <span class="chain-arrow">→</span>
+      <span class="chain-node">结论：MLWP已可与NWP竞争</span>
+    </div>
+  </div>
+
+  <!-- SECTION 1 -->
+  <div class="section-block" id="s1">
+    <div class="section-header">
+      <div class="section-num">1</div>
+      <div class="section-title">引言：问题的提出与研究空白</div>
+      <div class="section-role">引出问题 → 确立研究价值</div>
+    </div>
+    <div class="dual-col">
+      <div class="paper-col">
+        <div class="para-block">
+          <div class="para-text">
+            <mark class="term">Global medium-range weather forecasting</mark> is critical to decision-making across many social and economic domains. <mark class="term">Traditional numerical weather prediction (NWP)</mark> uses increased compute resources to improve forecast accuracy but <mark class="thesis">does not directly use historical weather data to improve the underlying model.</mark>
+          </div>
+        </div>
+        <div class="para-block">
+          <div class="para-text">
+            But while traditional NWP scales well with compute, <mark class="thesis">capitalizing on the vast amount of historical weather data to improve accuracy is not straightforward.</mark> Rather, NWP methods are improved by highly trained experts innovating better models, algorithms, and approximations, which can be a time-consuming and costly process.
+          </div>
+        </div>
+        <div class="para-block">
+          <div class="para-text">
+            <mark class="term">Machine learning–based weather prediction (MLWP)</mark>—wherein forecast models are trained from historical data, including observations and analysis data—<mark class="thesis">offers an alternative to traditional NWP.</mark> MLWP has the potential to improve forecast accuracy by capturing patterns in the data that are not easily represented in explicit equations.
+          </div>
+        </div>
+      </div>
+      <div class="anno-col">
+        <div class="anno-card thesis">
+          <span class="anno-type">核心论点 / Thesis</span>
+          <div class="anno-content">全文核心对立：NWP依赖计算力堆砌但<strong>无法从数据中自动学习</strong>，这是MLWP的切入点。此处通过"does not directly use"确立了论文要解决的根本问题。</div>
+          <div class="logic-pos">逻辑位置：提出"研究缺口"（research gap），为论点的合法性奠基</div>
+        </div>
+        <div class="anno-card term">
+          <span class="anno-type">关键概念 / Key Term</span>
+          <div class="anno-content"><strong>NWP vs MLWP</strong>：论文的核心对照框架。NWP = 物理方程 + 超算；MLWP = 历史数据 + 深度学习。理解这一对照是理解全文的前提。</div>
+          <div class="logic-pos">逻辑位置：界定战场，确立比较基准</div>
+        </div>
+        <div class="anno-card thesis">
+          <span class="anno-type">核心论点 / Thesis</span>
+          <div class="anno-content">MLWP的优势被定义为三层：① 捕捉隐含规律；② 利用现代深度学习硬件（非超算）；③ 更优的速度-精度权衡。这是论文后续所有实验设计的理论依据。</div>
+          <div class="logic-pos">逻辑位置：正面论点陈述，接下来用GraphCast来证明它</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 2 -->
+  <div class="section-block" id="s2">
+    <div class="section-header">
+      <div class="section-num">2</div>
+      <div class="section-title">GraphCast 系统介绍</div>
+      <div class="section-role">提供证据 → 方法实例化论点</div>
+    </div>
+    <div class="dual-col">
+      <div class="paper-col">
+        <div class="para-block">
+          <div class="para-text">
+            Here, we introduce <mark class="term">GraphCast</mark>, which produces an accurate <mark class="evidence">10-day forecast in under a minute on a single Google Cloud TPU v4 device</mark> and supports applications including predicting tropical cyclone tracks, atmospheric rivers, and extreme temperatures.
+          </div>
+        </div>
+        <div class="para-block">
+          <div class="para-text">
+            GraphCast takes as input the two most recent states of Earth's weather—the current time and 6 hours earlier—and predicts the next state of the weather 6 hours ahead. A single weather state is represented by a <mark class="evidence">0.25° latitude-longitude grid (721 by 1440)</mark>, which corresponds to roughly 28 km by 28 km resolution at the equator, where each grid point represents a set of surface and atmospheric variables. Like traditional NWP systems, <mark class="method">GraphCast is autoregressive.</mark>
+          </div>
+        </div>
+      </div>
+      <div class="anno-col">
+        <div class="anno-card evidence">
+          <span class="anno-type">实证证据 / Evidence</span>
+          <div class="anno-content">"1分钟完成10天预报"是论文最有冲击力的量化论据之一。相比HRES的"约1小时"，速度差距约60倍。这直接支撑了"更高效"的论点，但需注意两者硬件条件不同。</div>
+          <div class="logic-pos">逻辑功能：效率优势的核心证据</div>
+        </div>
+        <div class="anno-card method">
+          <span class="anno-type">方法论说明 / Method</span>
+          <div class="anno-content"><strong>自回归设计</strong>（autoregressive）是关键方法选择：每次预测6小时，循环叠加得到10天。优势是可无限延伸；风险是误差会随步骤累积（这也是后续"模糊化"问题的根源之一）。</div>
+          <div class="logic-pos">逻辑功能：解释"如何做"，为后续误差分析埋下伏笔</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 3 -->
+  <div class="section-block" id="s3">
+    <div class="section-header">
+      <div class="section-num">3</div>
+      <div class="section-title">模型架构：Encoder-Processor-Decoder</div>
+      <div class="section-role">方法论说明 → 增强可信度</div>
+    </div>
+    <div class="dual-col">
+      <div class="paper-col">
+        <div class="para-block">
+          <div class="para-text">
+            GraphCast is implemented as a <mark class="method">neural network architecture, based on GNNs in an "encoder-processor-decoder" configuration</mark>, with a total of <mark class="evidence">36.7 million parameters.</mark>
+          </div>
+        </div>
+        <div class="para-block">
+          <div class="para-text">
+            The <mark class="method">multimesh</mark> is a graph that is spatially homogeneous, with high spatial resolution over the globe. It is defined by refining a regular icosahedron iteratively six times. The processor uses <mark class="method">16 unshared GNN layers</mark> to perform learned message-passing on the multimesh, enabling efficient local and long-range information propagation.
+          </div>
+        </div>
+        <div class="para-block">
+          <div class="para-text">
+            During model development, we used <mark class="evidence">39 years (1979–2017) of historical data from ECMWF's ERA5 reanalysis archive.</mark> As a training objective, we averaged the <mark class="method">mean squared error (MSE) between GraphCast's predicted states over N autoregressive steps.</mark>
+          </div>
+        </div>
+      </div>
+      <div class="anno-col">
+        <div class="anno-card method">
+          <span class="anno-type">方法论说明 / Method</span>
+          <div class="anno-content"><strong>3670万参数</strong>——作者特别说明这在现代ML标准下是"相对较小的模型"。这既是局限（规模受硬件限制），也是优势（可在单个TPU上运行）。此处是作者主动管理读者预期的策略性表述。</div>
+          <div class="logic-pos">逻辑功能：框定规模，暗示可扩展性</div>
+        </div>
+        <div class="anno-card method">
+          <span class="anno-type">方法论说明 / Method</span>
+          <div class="anno-content"><strong>多尺度网格（multimesh）</strong>设计解决了天气系统"局部精细 + 全球关联"的双重需求。通过同时处理不同尺度的边，一次消息传递即可捕获局部和远程依赖，这是GNN在地球科学中的关键创新。</div>
+          <div class="logic-pos">逻辑功能：解释为何GNN优于CNN用于天气</div>
+        </div>
+        <div class="anno-card evidence">
+          <span class="anno-type">实证证据 / Evidence</span>
+          <div class="anno-content"><strong>39年ERA5数据</strong>是论文的数据基础。值得注意的是训练集截止2017年，测试集从2018年起，严格防止数据泄漏。MSE损失目标在长预报时效会产生模糊预报（预测均值而非具体状态），这是后文需要回应的方法论弱点。</div>
+          <div class="logic-pos">逻辑功能：证明数据规模，同时埋下MSE局限的伏笔</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 4 -->
+  <div class="section-block" id="s4">
+    <div class="section-header">
+      <div class="section-num">4</div>
+      <div class="section-title">验证结果：超越 HRES 的证据</div>
+      <div class="section-role">核心证据 → 直接支撑主论点</div>
+    </div>
+    <div class="dual-col">
+      <div class="paper-col">
+        <div class="para-block">
+          <div class="para-text">
+            We find that <mark class="thesis">GraphCast has greater weather forecasting skill than HRES</mark> when evaluated on 10-day forecasts at a horizontal resolution of 0.25°. GraphCast has better skill scores across all lead times, with a <mark class="evidence">skill score improvement of around 7 to 14%.</mark>
+          </div>
+        </div>
+        <div class="para-block">
+          <div class="para-text">
+            <mark class="evidence">GraphCast outperformed HRES on 90.3% of the 1380 targets</mark> and significantly (P ≤ 0.05) outperformed HRES on 89.9% of targets.
+          </div>
+        </div>
+        <div class="para-block">
+          <div class="para-text">
+            The regions of the atmosphere in which HRES had better performance were <mark class="counter">disproportionately localized in the stratosphere</mark> and had the lowest training loss weight. When excluding the 50 hPa level, GraphCast significantly outperforms HRES on <mark class="evidence">96.9% of the remaining 1280 targets.</mark>
+          </div>
+        </div>
+        <div class="para-block">
+          <div class="para-text">
+            We also found that <mark class="counter">increasing the number of autoregressive steps in the MSE loss also encourages GraphCast to blur</mark> to a degree at longer lead times, which means that its forecasts will lie somewhere between a traditional deterministic forecast and an ensemble mean.
+          </div>
+        </div>
+      </div>
+      <div class="anno-col">
+        <div class="anno-card thesis">
+          <span class="anno-type">核心论点 / Thesis</span>
+          <div class="anno-content">这是全文最核心的论断。"超越HRES"直接证明了MLWP已可与传统NWP竞争。7-14%的改进幅度在气象领域具有实质意义，尤其是在HRES已经是全球最佳确定性系统的背景下。</div>
+          <div class="logic-pos">逻辑位置：主论点的直接实证支撑</div>
+        </div>
+        <div class="anno-card evidence">
+          <span class="anno-type">实证证据 / Evidence</span>
+          <div class="anno-content"><strong>1380个目标中90.3%优于HRES</strong>，且统计显著（p≤0.05）。这一数字的说服力在于：① 覆盖面广（多变量多层次多时效）；② 有置信区间和p值；③ 与另一MLWP模型Pangu-Weather的比较（超越99.2%目标）进一步强化。</div>
+          <div class="logic-pos">逻辑功能：数量上的压倒性优势</div>
+        </div>
+        <div class="anno-card counter">
+          <span class="anno-type">让步/反驳处理 / Counter</span>
+          <div class="anno-content"><strong>策略性承认弱点</strong>：作者主动指出GraphCast在平流层表现较弱，并给出解释（训练权重低）。这是典型的"让步+转移"策略——承认局部劣势，但用"排除后96.9%"来最小化其影响。论证技巧值得关注。</div>
+          <div class="logic-pos">逻辑功能：增强可信度的主动让步</div>
+        </div>
+        <div class="anno-card counter">
+          <span class="anno-type">让步/反驳处理 / Counter</span>
+          <div class="anno-content"><strong>"模糊化"问题</strong>：MSE训练目标导致长时效预报趋向集合均值，这是确定性预报的内在缺陷。作者承认"对某些应用不理想"，但通过与人工模糊化HRES的对比（GraphCast仍优于88%目标）来回应这一质疑。</div>
+          <div class="logic-pos">逻辑位置：方法局限的主动披露，后文结论中还会再次出现</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 5 -->
+  <div class="section-block" id="s5">
+    <div class="section-header">
+      <div class="section-num">5</div>
+      <div class="section-title">极端事件预测：超出训练目标的泛化能力</div>
+      <div class="section-role">拓展论点 → 论证鲁棒性</div>
+    </div>
+    <div class="dual-col">
+      <div class="paper-col">
+        <div class="para-block">
+          <div class="para-text">
+            Beyond evaluating GraphCast's forecast skill, we also evaluated how its forecasts support predicting <mark class="thesis">severe events, including tropical cyclones tracks, atmospheric rivers, and extreme temperature. These are key downstream applications for which <mark class="evidence">GraphCast is not specifically trained</mark>, but which are very important for human activity.</mark>
+          </div>
+        </div>
+        <div class="para-block">
+          <div class="para-text">
+            <mark class="evidence">GraphCast is significantly better than HRES for lead times of 18 hours to 4.75 days</mark> in tropical cyclone track prediction. For atmospheric rivers, <mark class="evidence">GraphCast improves the prediction of IVT compared with HRES, from 25% at short lead time to 10% at longer horizons.</mark>
+          </div>
+        </div>
+        <div class="para-block">
+          <div class="para-text">
+            For extreme heat, <mark class="evidence">GraphCast's precision-recall curves are above HRES's for 5- and 10-day lead times</mark>, suggesting that GraphCast's forecasts are generally superior at extreme classification over longer horizons. By contrast, <mark class="counter">HRES has better precision-recall at the 12-hour lead time.</mark>
+          </div>
+        </div>
+      </div>
+      <div class="anno-col">
+        <div class="anno-card thesis">
+          <span class="anno-type">核心论点 / Thesis</span>
+          <div class="anno-content">"未经专门训练仍表现优异"是论证GraphCast泛化能力的关键。这一结构将极端事件预测从"直接证据"升级为"模型鲁棒性证明"——如果仅在训练目标上好，可能只是过拟合；在未训练的任务上也好，才真正说明模型学到了天气规律的本质。</div>
+          <div class="logic-pos">逻辑功能：将证据扩展至泛化维度</div>
+        </div>
+        <div class="anno-card evidence">
+          <span class="anno-type">实证证据 / Evidence</span>
+          <div class="anno-content">三类极端事件涵盖不同物理机制（热带气旋/大气河/极端温度），在多个应用场景中一致优于HRES，增强了结论的稳健性。气旋追踪18h-4.75天显著更好；大气河短期改进25%；极端热事件中期和长期领先。</div>
+          <div class="logic-pos">逻辑功能：多场景收敛证据</div>
+        </div>
+        <div class="anno-card counter">
+          <span class="anno-type">让步/反驳处理 / Counter</span>
+          <div class="anno-content"><strong>极端热事件12小时时效HRES更好</strong>：这是第二处主动承认的弱点。短时效的相对劣势与图2D中"2T近零的技能分数"相吻合，展现了作者内部数据的一致性，实际上增强了整体论证的可信度。</div>
+          <div class="logic-pos">逻辑功能：局部让步强化整体可信度</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 6 -->
+  <div class="section-block" id="s6">
+    <div class="section-header">
+      <div class="section-num">6</div>
+      <div class="section-title">局限与结论：框定意义，开放未来</div>
+      <div class="section-role">回应质疑 → 定性历史意义</div>
+    </div>
+    <div class="dual-col">
+      <div class="paper-col">
+        <div class="para-block">
+          <div class="para-text">
+            One key limitation of our approach is in how <mark class="counter">uncertainty is handled.</mark> We focused on deterministic forecasts... <mark class="counter">GraphCast's MSE training objective encourages it to spatially blur its predictions in the presence of uncertainty</mark>, which may not be desirable for some applications where knowing tail, or joint, probabilities of events is important. <mark class="thesis">Building probabilistic forecasts that model uncertainty more explicitly is a crucial next step.</mark>
+          </div>
+        </div>
+        <div class="para-block">
+          <div class="para-text">
+            <mark class="counter">Our approach should not be regarded as a replacement for traditional weather forecasting methods</mark>, which have been developed for decades, rigorously tested in many real-world contexts, and offer many features we have not yet explored. Rather, <mark class="thesis">our work should be interpreted as evidence that MLWP is able to meet the challenges of real-world forecasting problems and has the potential to complement and improve the current best methods.</mark>
+          </div>
+        </div>
+        <div class="para-block">
+          <div class="para-text">
+            <mark class="thesis">GraphCast's forecast skill and efficiency compared with HRES shows that MLWP methods are now competitive with traditional weather forecasting methods.</mark> We believe this marks a turning point in weather forecasting, which helps open new avenues to strengthen the breadth of weather-dependent decision-making.
+          </div>
+        </div>
+      </div>
+      <div class="anno-col">
+        <div class="anno-card counter">
+          <span class="anno-type">让步/反驳处理 / Counter</span>
+          <div class="anno-content"><strong>不确定性量化是最大缺陷</strong>：确定性预报无法给出概率分布，在极端事件风险评估中存在本质局限。作者没有掩盖，而是直接提出"概率预报是关键下一步"——这是学术诚信，也是为后续研究划定议程的策略。</div>
+          <div class="logic-pos">逻辑功能：正面回应方法局限，转化为未来研究方向</div>
+        </div>
+        <div class="anno-card counter">
+          <span class="anno-type">让步/反驳处理 / Counter</span>
+          <div class="anno-content"><strong>"不是替代，而是补充"</strong>——这是典型的缩小声索（hedging claim）策略。通过主动降低论断强度，作者：① 避免引发NWP领域的防御性反应；② 使论文更容易被接受；③ 实际上论证的核心（"竞争力相当"）已足够有力。</div>
+          <div class="logic-pos">逻辑技巧：战略性降低声索强度</div>
+        </div>
+        <div class="anno-card thesis">
+          <span class="anno-type">核心论点 / Thesis</span>
+          <div class="anno-content"><strong>"转折点"（turning point）</strong>是论文最大胆的论断。在经过大量证据铺垫后，作者在结论处才使用这一强表述，体现了论证的层次控制。注意这个论断是关于"历史意义"的判断，而非关于技术指标，无法被直接证伪——这是修辞上的精心设计。</div>
+          <div class="logic-pos">逻辑位置：全文最高级论断，在证据积累后水到渠成</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTTOM OVERVIEW -->
+  <div class="bottom-overview">
+    <h3>底部论证结构总览</h3>
+    <div class="overview-grid">
+      <div class="ov-item">
+        <div class="ov-label">作者核心主张（一句话）</div>
+        <div class="ov-text">以GraphCast为证，证明机器学习天气预报已在精度和效率上与传统数值预报竞争，标志着领域转折点。</div>
+      </div>
+      <div class="ov-item">
+        <div class="ov-label">论证类型</div>
+        <div class="ov-text">实证论证（empirical argument）+ 类比论证（ML在其他复杂系统中的成功）+ 量化对比</div>
+      </div>
+      <div class="ov-item">
+        <div class="ov-label">反驳处理策略</div>
+        <div class="ov-text">主动让步（平流层弱点、模糊化、不确定性）→ 逐一最小化或转化为未来研究方向</div>
+      </div>
+      <div class="ov-item">
+        <div class="ov-label">潜在论证漏洞</div>
+        <div class="ov-text">MSE指标可能掩盖预报质量的其他维度；ERA5数据依赖NWP，数据质量循环依赖；概率预报缺口尚未解决</div>
+      </div>
+    </div>
+    <div class="strongest">
+      <div class="sw-label s">最强论据</div>
+      在1380个独立验证目标中统计显著地优于HRES（p≤0.05），且在三类未经训练的极端事件任务上同样表现更优——量大、多样、有统计显著性，难以用"数据偶然"或"过拟合"来反驳。
+    </div>
+    <div class="weakest">
+      <div class="sw-label w">最薄弱处</div>
+      对不确定性的处理完全缺位：MSE优化产生的模糊预报无法给出概率分布，在需要风险评估的极端事件决策中存在本质性局限，而这恰恰是天气预报最重要的应用场景之一。
+    </div>
+    <div class="author-line">Lam et al. · Science 382, 1416–1421 (2023) · DOI: 10.1126/science.adi2336 · 批注生成：纯逻辑分析版（Prompt B）</div>
+  </div>
+
+</div>
+
+<script>
+  function scrollTo(id) {
+    const el = document.querySelector(id);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+  const btns = document.querySelectorAll('.sec-btn');
+  const sections = document.querySelectorAll('.section-block');
+  window.addEventListener('scroll', () => {
+    let current = '';
+    sections.forEach((s, i) => {
+      const rect = s.getBoundingClientRect();
+      if (rect.top <= 200) current = i;
+    });
+    btns.forEach((b, i) => b.classList.toggle('active', i === current));
+  });
+</script>
+</body>
+</html>

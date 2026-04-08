@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GraphCast 论文批注 · 有Question清单版</title>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;1,400&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #0f2340;
+    --navy-light: #1a3358;
+    --cream: #faf8f3;
+    --paper: #f4f1ea;
+    --card-bg: #ffffff;
+    --q1-color: #7c3aed; --q1-bg: #f5f3ff;
+    --q2-color: #0369a1; --q2-bg: #f0f9ff;
+    --q3-color: #b45309; --q3-bg: #fffbeb;
+    --q4-color: #15803d; --q4-bg: #f0fdf4;
+    --q5-color: #be123c; --q5-bg: #fff1f2;
+    --text: #1a1a1a;
+    --text-muted: #555;
+    --border: #e0dbd0;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'IBM Plex Sans', sans-serif; background: var(--cream); color: var(--text); }
+
+  /* TOP NAV */
+  .top-nav {
+    background: var(--navy);
+    color: white;
+    padding: 0 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 56px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .nav-title { font-size: 15px; font-weight: 600; }
+  .nav-right { display: flex; align-items: center; gap: 12px; }
+  .nav-badge { background: rgba(255,255,255,0.12); padding: 4px 10px; border-radius: 20px; font-size: 12px; color: #cbd5e1; }
+
+  /* SECTION NAV */
+  .section-nav {
+    background: var(--navy-light);
+    display: flex;
+    overflow-x: auto;
+    scrollbar-width: none;
+    position: sticky;
+    top: 56px;
+    z-index: 99;
+  }
+  .section-nav::-webkit-scrollbar { display: none; }
+  .sec-btn {
+    background: none; border: none;
+    color: #94a3b8; padding: 10px 16px;
+    font-size: 12px; font-family: 'IBM Plex Sans', sans-serif;
+    cursor: pointer; white-space: nowrap;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+  }
+  .sec-btn:hover, .sec-btn.active { color: white; border-bottom-color: #a78bfa; }
+
+  /* MAIN */
+  .main { max-width: 1300px; margin: 0 auto; padding: 2rem 1.5rem; }
+
+  /* META */
+  .meta-card {
+    background: var(--navy); color: white;
+    border-radius: 12px; padding: 1.5rem 2rem;
+    margin-bottom: 2rem;
+    display: grid; grid-template-columns: 1fr auto;
+    gap: 1rem; align-items: start;
+  }
+  .meta-title { font-family: 'Lora', serif; font-size: 20px; margin-bottom: 6px; line-height: 1.4; }
+  .meta-authors { font-size: 12px; color: #94a3b8; margin-bottom: 10px; }
+  .meta-tags { display: flex; gap: 6px; flex-wrap: wrap; }
+  .tag { background: rgba(255,255,255,0.1); padding: 3px 10px; border-radius: 20px; font-size: 11px; }
+  .meta-info { text-align: right; }
+  .course-info { font-size: 12px; color: #94a3b8; }
+  .course-name { font-size: 14px; color: white; font-weight: 500; margin-bottom: 4px; }
+
+  /* QUESTION LIST */
+  .question-bar {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 2rem;
+  }
+  .question-bar h3 { font-size: 13px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px; }
+  .q-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 8px; }
+  .q-chip {
+    border-radius: 8px; padding: 10px 14px;
+    font-size: 13px; line-height: 1.5;
+    display: flex; align-items: flex-start; gap: 8px;
+    border: 1px solid;
+  }
+  .q-chip.q1 { background: var(--q1-bg); border-color: #c4b5fd; }
+  .q-chip.q2 { background: var(--q2-bg); border-color: #bae6fd; }
+  .q-chip.q3 { background: var(--q3-bg); border-color: #fde68a; }
+  .q-chip.q4 { background: var(--q4-bg); border-color: #bbf7d0; }
+  .q-chip.q5 { background: var(--q5-bg); border-color: #fecdd3; }
+  .q-num {
+    width: 20px; height: 20px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 600;
+    flex-shrink: 0; margin-top: 1px;
+  }
+  .q1 .q-num { background: var(--q1-color); color: white; }
+  .q2 .q-num { background: var(--q2-color); color: white; }
+  .q3 .q-num { background: var(--q3-color); color: white; }
+  .q4 .q-num { background: var(--q4-color); color: white; }
+  .q5 .q-num { background: var(--q5-color); color: white; }
+  .q-text { color: var(--text); }
+
+  /* DUAL COL */
+  .section-block { margin-bottom: 3rem; }
+  .section-header {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 1rem; padding-bottom: 8px;
+    border-bottom: 2px solid var(--navy);
+  }
+  .section-num-badge { background: var(--navy); color: white; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; flex-shrink: 0; }
+  .section-title { font-size: 16px; font-weight: 600; color: var(--navy); }
+
+  .dual-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; align-items: start; }
+
+  /* PAPER */
+  .paper-col { display: flex; flex-direction: column; gap: 12px; }
+  .para-block {
+    background: var(--card-bg); border: 1px solid var(--border);
+    border-radius: 8px; padding: 14px 16px;
+  }
+  .para-text { font-family: 'Lora', serif; font-size: 14px; line-height: 1.8; color: #2a2a2a; }
+
+  mark.q1 { background: #ede9fe; border-radius: 3px; padding: 1px 3px; }
+  mark.q2 { background: #dbeafe; border-radius: 3px; padding: 1px 3px; }
+  mark.q3 { background: #fef9c3; border-radius: 3px; padding: 1px 3px; }
+  mark.q4 { background: #dcfce7; border-radius: 3px; padding: 1px 3px; }
+  mark.q5 { background: #ffe4e6; border-radius: 3px; padding: 1px 3px; }
+
+  /* ANNOTATION */
+  .anno-col { display: flex; flex-direction: column; gap: 12px; }
+  .anno-card {
+    border-radius: 8px; padding: 14px 16px;
+    font-size: 13px; line-height: 1.6;
+    border-left: 4px solid;
+  }
+  .anno-card.q1 { background: var(--q1-bg); border-color: var(--q1-color); }
+  .anno-card.q2 { background: var(--q2-bg); border-color: var(--q2-color); }
+  .anno-card.q3 { background: var(--q3-bg); border-color: var(--q3-color); }
+  .anno-card.q4 { background: var(--q4-bg); border-color: var(--q4-color); }
+  .anno-card.q5 { background: var(--q5-bg); border-color: var(--q5-color); }
+
+  .anno-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .anno-qnum {
+    width: 22px; height: 22px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700; flex-shrink: 0; color: white;
+  }
+  .anno-card.q1 .anno-qnum { background: var(--q1-color); }
+  .anno-card.q2 .anno-qnum { background: var(--q2-color); }
+  .anno-card.q3 .anno-qnum { background: var(--q3-color); }
+  .anno-card.q4 .anno-qnum { background: var(--q4-color); }
+  .anno-card.q5 .anno-qnum { background: var(--q5-color); }
+
+  .anno-fn { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+  .anno-card.q1 .anno-fn { color: var(--q1-color); }
+  .anno-card.q2 .anno-fn { color: var(--q2-color); }
+  .anno-card.q3 .anno-fn { color: var(--q3-color); }
+  .anno-card.q4 .anno-fn { color: var(--q4-color); }
+  .anno-card.q5 .anno-fn { color: var(--q5-color); }
+
+  .anno-content { color: var(--text); }
+  .anno-depth { font-size: 11px; color: var(--text-muted); margin-top: 8px; padding-top: 6px; border-top: 1px solid rgba(0,0,0,0.08); }
+
+  /* WORKSHEET */
+  .worksheet {
+    background: var(--card-bg); border: 1px solid var(--border);
+    border-radius: 12px; padding: 1.5rem 2rem; margin-top: 2rem;
+  }
+  .worksheet h3 { font-size: 14px; color: var(--navy); font-weight: 600; margin-bottom: 1.25rem; display: flex; align-items: center; gap: 8px; }
+  .ws-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1rem; }
+  .ws-card {
+    border-radius: 10px; padding: 1rem 1.25rem;
+    border: 1.5px solid;
+  }
+  .ws-card.q1 { background: var(--q1-bg); border-color: #c4b5fd; }
+  .ws-card.q2 { background: var(--q2-bg); border-color: #bae6fd; }
+  .ws-card.q3 { background: var(--q3-bg); border-color: #fde68a; }
+  .ws-card.q4 { background: var(--q4-bg); border-color: #bbf7d0; }
+  .ws-card.q5 { background: var(--q5-bg); border-color: #fecdd3; }
+
+  .ws-q-header { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .ws-badge {
+    width: 24px; height: 24px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700; color: white; flex-shrink: 0;
+  }
+  .q1 .ws-badge { background: var(--q1-color); }
+  .q2 .ws-badge { background: var(--q2-color); }
+  .q3 .ws-badge { background: var(--q3-color); }
+  .q4 .ws-badge { background: var(--q4-color); }
+  .q5 .ws-badge { background: var(--q5-color); }
+
+  .ws-q-text { font-size: 12px; font-weight: 600; color: var(--text); line-height: 1.4; }
+  .ws-levels { display: flex; flex-direction: column; gap: 4px; }
+  .ws-level { font-size: 12px; display: flex; align-items: flex-start; gap: 6px; }
+  .ws-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; }
+  .ws-label { font-weight: 600; min-width: 60px; font-size: 11px; }
+  .ws-card.q1 .ws-label { color: var(--q1-color); }
+  .ws-card.q2 .ws-label { color: var(--q2-color); }
+  .ws-card.q3 .ws-label { color: var(--q3-color); }
+  .ws-card.q4 .ws-label { color: var(--q4-color); }
+  .ws-card.q5 .ws-label { color: var(--q5-color); }
+  .ws-card.q1 .ws-dot { background: var(--q1-color); }
+  .ws-card.q2 .ws-dot { background: var(--q2-color); }
+  .ws-card.q3 .ws-dot { background: var(--q3-color); }
+  .ws-card.q4 .ws-dot { background: var(--q4-color); }
+  .ws-card.q5 .ws-dot { background: var(--q5-color); }
+
+  @media (max-width: 768px) {
+    .dual-col { grid-template-columns: 1fr; }
+    .top-nav { flex-direction: column; height: auto; padding: 10px 1rem; gap: 4px; }
+    .meta-card { grid-template-columns: 1fr; }
+    .meta-info { text-align: left; }
+  }
+</style>
+</head>
+<body>
+
+<!-- TOP NAV -->
+<nav class="top-nav">
+  <div class="nav-title">GraphCast · 有Question清单版</div>
+  <div class="nav-right">
+    <div class="nav-badge">Lam et al., Science 382, 2023</div>
+    <div class="nav-badge">5个阅读问题</div>
+  </div>
+</nav>
+
+<!-- SECTION NAV -->
+<div class="section-nav">
+  <button class="sec-btn active" onclick="jumpTo('#s1')">§1 问题背景</button>
+  <button class="sec-btn" onclick="jumpTo('#s2')">§2 系统介绍</button>
+  <button class="sec-btn" onclick="jumpTo('#s3')">§3 架构与训练</button>
+  <button class="sec-btn" onclick="jumpTo('#s4')">§4 验证结果</button>
+  <button class="sec-btn" onclick="jumpTo('#s5')">§5 极端事件</button>
+  <button class="sec-btn" onclick="jumpTo('#s6')">§6 结论与局限</button>
+  <button class="sec-btn" onclick="jumpTo('#worksheet')">答题索引</button>
+</div>
+
+<div class="main">
+
+  <!-- META -->
+  <div class="meta-card">
+    <div>
+      <div class="meta-title">Learning Skillful Medium-Range Global Weather Forecasting</div>
+      <div class="meta-authors">Remi Lam, Alvaro Sanchez-Gonzalez, Matthew Willson et al. · Google DeepMind · Science 382 (2023)</div>
+      <div class="meta-tags">
+        <span class="tag">图神经网络</span>
+        <span class="tag">中期天气预报</span>
+        <span class="tag">机器学习</span>
+        <span class="tag">ERA5</span>
+        <span class="tag">GraphCast</span>
+      </div>
+    </div>
+    <div class="meta-info">
+      <div class="course-name">机器学习与地球科学</div>
+      <div class="course-info">第6周 / 精读作业</div>
+    </div>
+  </div>
+
+  <!-- QUESTION LIST -->
+  <div class="question-bar">
+    <h3>本次阅读问题清单</h3>
+    <div class="q-grid">
+      <div class="q-chip q1">
+        <div class="q-num">Q1</div>
+        <div class="q-text">GraphCast 相比传统NWP的核心优势是什么？为什么MLWP可以从历史数据中学习而NWP难以做到？</div>
+      </div>
+      <div class="q-chip q2">
+        <div class="q-num">Q2</div>
+        <div class="q-text">GraphCast的"encoder-processor-decoder"架构各部分分别完成什么功能？多尺度网格（multimesh）解决了什么问题？</div>
+      </div>
+      <div class="q-chip q3">
+        <div class="q-num">Q3</div>
+        <div class="q-text">论文如何建立公平的比较框架？验证结果"90%以上优于HRES"的置信度如何？</div>
+      </div>
+      <div class="q-chip q4">
+        <div class="q-num">Q4</div>
+        <div class="q-text">GraphCast在未经专门训练的极端事件预测上的表现说明了什么？这种泛化能力意味着什么？</div>
+      </div>
+      <div class="q-chip q5">
+        <div class="q-num">Q5</div>
+        <div class="q-text">论文承认了哪些局限性？MSE训练目标导致的"模糊化"问题是否是致命弱点？</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 1 -->
+  <div class="section-block" id="s1">
+    <div class="section-header">
+      <div class="section-num-badge">1</div>
+      <div class="section-title">研究背景：NWP的瓶颈与MLWP的机会</div>
+    </div>
+    <div class="dual-col">
+      <div class="paper-col">
+        <div class="para-block">
+          <div class="para-text">
+            <mark class="q1">Global medium-range weather forecasting is critical to decision-making across many social and economic domains. Traditional numerical weather prediction (NWP) uses increased compute resources to improve forecast accuracy but does not directly use historical weather data to improve the underlying model.</mark>
+          </div>
+        </div>
+        <div class="para-block">
+          <div class="para-text">
+            The success of NWP lies in the rigorous and ongoing research practices that provide increasingly detailed descriptions of weather phenomena and in how well NWP scales to greater accuracy with greater computational resources. <mark class="q1">But while traditional NWP scales well with compute, capitalizing on the vast amount of historical weather data to improve accuracy is not straightforward. Rather, NWP methods are improved by highly trained experts innovating better models, algorithms, and approximations, which can be a time-consuming and costly process.</mark>
+          </div>
+        </div>
+        <div class="para-block">
+          <div class="para-text">
+            <mark class="q1">Machine learning–based weather prediction (MLWP)—wherein forecast models are trained from historical data—offers an alternative to traditional NWP. MLWP has the potential to improve forecast accuracy by capturing patterns in the data that are not easily represented in explicit equations. MLWP also offers opportunities for greater efficiency by exploiting modern deep learning hardware</mark>, rather than supercomputers, and striking more favorable speed–accuracy trade-offs.
+          </div>
+        </div>
+      </div>
+      <div class="anno-col">
+        <div class="anno-card q1">
+          <div class="anno-header">
+            <div class="anno-qnum">Q1</div>
+            <span class="anno-fn">对应问题1</span>
+          </div>
+          <div class="anno-content">
+            <strong>NWP的本质局限</strong>：NWP通过求解大气物理方程来预报天气，其改进依赖"更好的方程近似 + 更多的计算资源"，这是专家驱动、主动设计的过程。历史数据只用于初始化，不用于改进模型本身。
+          </div>
+          <div class="anno-depth">分析深度：核心论点 | 该段落在整体论证中的位置：提出研究缺口（research gap）</div>
+        </div>
+        <div class="anno-card q1">
+          <div class="anno-header">
+            <div class="anno-qnum">Q1</div>
+            <span class="anno-fn">对应问题1</span>
+          </div>
+          <div class="anno-content">
+            <strong>MLWP为何能学习历史数据</strong>：ML模型通过梯度下降自动从数据中提取规律，不需要明确写出物理方程。这意味着即使存在物理上难以建模的复杂相互作用（如云微物理、湍流），MLWP也可通过数据统计来近似捕捉。
+          </div>
+          <div class="anno-depth">分析深度：关键证据 | 潜在反驳：是否只是统计拟合而非真正理解物理？</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 2 -->
+  <div class="section-block" id="s2">
+    <div class="section-header">
+      <div class="section-num-badge">2</div>
+      <div class="section-title">GraphCast 系统：输入输出与核心设计</div>
+    </div>
+    <div class="dual-col">
+      <div class="paper-col">
+        <div class="para-block">
+          <div class="para-text">
+            GraphCast takes as input the two most recent states of Earth's weather—the current time and 6 hours earlier—and predicts the next state of the weather 6 hours ahead. A single weather state is represented by a <mark class="q2">0.25° latitude-longitude grid (721 by 1440)</mark>, which corresponds to roughly 28 km by 28 km resolution at the equator, where each grid point represents a set of surface and atmospheric variables. <mark class="q2">Like traditional NWP systems, GraphCast is autoregressive: It can be "rolled out" by feeding its own predictions back in as input, to generate an arbitrarily long trajectory of weather states.</mark>
+          </div>
+        </div>
+        <div class="para-block">
+          <div class="para-text">
+            Here, we introduce GraphCast, which produces an accurate <mark class="q1">10-day forecast in under a minute on a single Google Cloud TPU v4 device</mark> and supports applications including predicting tropical cyclone tracks, atmospheric rivers, and extreme temperatures.
+          </div>
+        </div>
+      </div>
+      <div class="anno-col">
+        <div class="anno-card q2">
+          <div class="anno-header">
+            <div class="anno-qnum">Q2</div>
+            <span class="anno-fn">对应问题2</span>
+          </div>
+          <div class="anno-content">
+            <strong>输入设计的信息论含义</strong>：使用"当前时刻"和"6小时前"两个状态作为输入，不仅提供了当前快照，还提供了大气的"运动方向"（速度信息），这让模型能推断动态趋势，而非仅从静态状态预测。自回归设计意味着误差会累积——这是长时效预报模糊化的根源。
+          </div>
+          <div class="anno-depth">分析深度：方法论解释 | 论证功能：解释设计选择的合理性</div>
+        </div>
+        <div class="anno-card q1">
+          <div class="anno-header">
+            <div class="anno-qnum">Q1</div>
+            <span class="anno-fn">对应问题1（效率维度）</span>
+          </div>
+          <div class="anno-content">
+            <strong>"1分钟完成10天预报"</strong>：HRES需约1小时，差距60倍。但注意：HRES运行在超算集群上，GraphCast运行在单个TPU上，硬件成本和能耗有本质差异。这一对比支撑了"效率优势"的论点，但需谨慎解读。
+          </div>
+          <div class="anno-depth">分析深度：证据质量评估 | 潜在漏洞：硬件比较是否公平？</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 3 -->
+  <div class="section-block" id="s3">
+    <div class="section-header">
+      <div class="section-num-badge">3</div>
+      <div class="section-title">架构与训练：Encoder-Processor-Decoder + ERA5</div>
+    </div>
+    <div class="dual-col">
+      <div class="paper-col">
+        <div class="para-block">
+          <div class="para-text">
+            GraphCast is implemented as a neural network architecture, <mark class="q2">based on GNNs in an "encoder-processor-decoder" configuration</mark>, with a total of 36.7 million parameters.
+          </div>
+        </div>
+        <div class="para-block">
+          <div class="para-text">
+            <mark class="q2">The encoder maps variables represented as node attributes on the input grid to learned node attributes on an internal "multimesh" representation. The multimesh is a graph that is spatially homogeneous, with high spatial resolution over the globe.</mark> It is defined by refining a regular icosahedron iteratively six times. <mark class="q2">The processor uses 16 unshared GNN layers to perform learned message-passing on the multimesh, enabling efficient local and long-range information propagation.</mark> <mark class="q2">The decoder maps the final processor layer's learned features from the multimesh representation back to the latitude-longitude grid.</mark>
+          </div>
+        </div>
+        <div class="para-block">
+          <div class="para-text">
+            During model development, we used <mark class="q3">39 years (1979–2017) of historical data from ECMWF's ERA5 reanalysis archive. As a training objective, we averaged the mean squared error (MSE) between GraphCast's predicted states over N autoregressive steps. The value of N was increased incrementally from 1 to 12 over the course of training.</mark> Consistent with real deployment scenarios, <mark class="q3">we evaluated GraphCast on the held-out data from the years 2018 onward.</mark>
+          </div>
+        </div>
+      </div>
+      <div class="anno-col">
+        <div class="anno-card q2">
+          <div class="anno-header">
+            <div class="anno-qnum">Q2</div>
+            <span class="anno-fn">对应问题2（架构三部分）</span>
+          </div>
+          <div class="anno-content">
+            <strong>三部分功能拆解</strong>：<br>
+            · <strong>Encoder</strong>：将经纬度网格数据"投影"到多尺度球面图（multimesh）节点上——相当于特征提取<br>
+            · <strong>Processor</strong>：16层GNN在multimesh上做消息传递——捕获局部和远程大气相互作用<br>
+            · <strong>Decoder</strong>：将multimesh特征映射回经纬度网格，输出预测增量（残差）
+          </div>
+          <div class="anno-depth">分析深度：核心论点 | 论证功能：证明架构设计的针对性</div>
+        </div>
+        <div class="anno-card q2">
+          <div class="anno-header">
+            <div class="anno-qnum">Q2</div>
+            <span class="anno-fn">对应问题2（multimesh）</span>
+          </div>
+          <div class="anno-content">
+            <strong>multimesh解决的问题</strong>：经纬度网格在极点附近密度不均匀（极点格点很密），而multimesh基于二十面体细化，确保全球空间均匀分辨率。这使得GNN的感受野不受纬度影响，避免了极地信号过度主导的问题。
+          </div>
+          <div class="anno-depth">分析深度：关键证据 | 论证价值：回答"为什么用GNN而非CNN"</div>
+        </div>
+        <div class="anno-card q3">
+          <div class="anno-header">
+            <div class="anno-qnum">Q3</div>
+            <span class="anno-fn">对应问题3（训练数据与划分）</span>
+          </div>
+          <div class="anno-content">
+            <strong>数据划分的严格性</strong>：训练集1979-2017，测试集2018年起，严格时间划分防止数据泄漏。MSE损失的N步自回归训练（从1步增至12步）确保模型学会多步预测而非只优化单步误差。注意：ERA5本身是NWP产出的再分析数据，存在循环依赖的哲学问题。
+          </div>
+          <div class="anno-depth">分析深度：证据质量 | 潜在论证漏洞：ERA5依赖NWP的循环问题</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 4 -->
+  <div class="section-block" id="s4">
+    <div class="section-header">
+      <div class="section-num-badge">4</div>
+      <div class="section-title">验证结果：公平比较与主要发现</div>
+    </div>
+    <div class="dual-col">
+      <div class="paper-col">
+        <div class="para-block">
+          <div class="para-text">
+            <mark class="q3">In making these comparisons, skill was established on the basis of two key elements: (i) the selection of the ground truth for comparison and (ii) a careful accounting of the data assimilation windows used to infer this data from observations.</mark> We used ERA5 as the ground truth for evaluating GraphCast. However, evaluating HRES forecasts against ERA5 would result in nonzero error on the initial forecast step. Instead, we constructed an "HRES forecast at step 0" (HRES-fc0) dataset to use as ground truth for HRES.
+          </div>
+        </div>
+        <div class="para-block">
+          <div class="para-text">
+            <mark class="q3">GraphCast outperformed HRES on 90.3% of the 1380 targets and significantly (P ≤ 0.05, nominal sample size n ∈ {729, 730}) outperformed HRES on 89.9% of targets.</mark>
+          </div>
+        </div>
+        <div class="para-block">
+          <div class="para-text">
+            <mark class="q5">We found that increasing the number of autoregressive steps in the MSE loss also encourages GraphCast to blur to a degree at longer lead times</mark>, which means that its forecasts will lie somewhere between a traditional deterministic forecast and an ensemble mean. We found that RMSE-optimized blurring applied to GraphCast has greater skill than analogous blurring applied to HRES on <mark class="q3">88.0% of our 1380 verification targets</mark>, which is generally consistent with our above conclusions.
+          </div>
+        </div>
+      </div>
+      <div class="anno-col">
+        <div class="anno-card q3">
+          <div class="anno-header">
+            <div class="anno-qnum">Q3</div>
+            <span class="anno-fn">对应问题3（比较框架）</span>
+          </div>
+          <div class="anno-content">
+            <strong>HRES-fc0的构建是公平性的关键</strong>：如果用ERA5同时评估两个模型，HRES因用不同初始化方式会在第0步就有误差，导致不公平。作者用"HRES未来初始化状态"作为HRES的ground truth，确保两个模型的初始步误差都为零。这一设计细节体现了方法论的严谨性。
+          </div>
+          <div class="anno-depth">分析深度：核心论点 | 论证价值：奠定比较有效性</div>
+        </div>
+        <div class="anno-card q3">
+          <div class="anno-header">
+            <div class="anno-qnum">Q3</div>
+            <span class="anno-fn">对应问题3（置信度）</span>
+          </div>
+          <div class="anno-content">
+            <strong>90.3%优于HRES的可信度评估</strong>：① 样本量n≈730，有效样本数；② 统计显著性p≤0.05；③ 1380个目标覆盖多变量、多层次、多时效，减少cherry-picking风险。局限：名义样本量和有效样本量因时间自相关而有差异，作者在补充材料中有处理。
+          </div>
+          <div class="anno-depth">分析深度：关键证据 | 证据强度：强，但需关注有效样本量处理</div>
+        </div>
+        <div class="anno-card q5">
+          <div class="anno-header">
+            <div class="anno-qnum">Q5</div>
+            <span class="anno-fn">对应问题5（模糊化）</span>
+          </div>
+          <div class="anno-content">
+            <strong>"模糊化"是局限还是特性？</strong> 作者的回应策略：将模糊化的GraphCast与模糊化的HRES对比，前者仍优于88%目标，说明"即使抹平了模糊因素，GraphCast本质上也更好"。这是将潜在弱点转化为支持论点的论证技巧，但对于需要尾部概率的应用仍是真实局限。
+          </div>
+          <div class="anno-depth">分析深度：让步处理 | 论证技巧：以控制变量回应质疑</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 5 -->
+  <div class="section-block" id="s5">
+    <div class="section-header">
+      <div class="section-num-badge">5</div>
+      <div class="section-title">极端事件预测：泛化能力的证明</div>
+    </div>
+    <div class="dual-col">
+      <div class="paper-col">
+        <div class="para-block">
+          <div class="para-text">
+            Beyond evaluating GraphCast's forecast skill against HRES's, we also evaluated how its forecasts support predicting severe events, including tropical cyclones tracks, atmospheric rivers, and extreme temperature. <mark class="q4">These are key downstream applications for which GraphCast is not specifically trained, but which are very important for human activity.</mark>
+          </div>
+        </div>
+        <div class="para-block">
+          <div class="para-text">
+            <mark class="q4">GraphCast is significantly better than HRES for lead times of 18 hours to 4.75 days</mark> in tropical cyclone tracking. For atmospheric rivers, <mark class="q4">GraphCast improves the prediction of IVT compared with HRES, from 25% at short lead time to 10% at longer horizons.</mark>
+          </div>
+        </div>
+        <div class="para-block">
+          <div class="para-text">
+            <mark class="q4">GraphCast's precision-recall curves are above HRES's for 5- and 10-day lead times</mark> for extreme heat, suggesting GraphCast's forecasts are generally superior at extreme classification over longer horizons. <mark class="q5">By contrast, HRES has better precision-recall at the 12-hour lead time.</mark>
+          </div>
+        </div>
+      </div>
+      <div class="anno-col">
+        <div class="anno-card q4">
+          <div class="anno-header">
+            <div class="anno-qnum">Q4</div>
+            <span class="anno-fn">对应问题4（泛化意义）</span>
+          </div>
+          <div class="anno-content">
+            <strong>"未经专门训练"的论证价值</strong>：如果GraphCast只在训练目标上优于HRES，可能只是更好地拟合了ERA5的统计特性。但在从未专门优化的极端事件任务上同样表现更好，意味着模型确实学到了大气动力学的一般规律，而非表面统计。这将论证从"更好的拟合"升级为"更好的理解"。
+          </div>
+          <div class="anno-depth">分析深度：核心论点 | 泛化能力是区分"学到规律"vs"记住数据"的关键检验</div>
+        </div>
+        <div class="anno-card q4">
+          <div class="anno-header">
+            <div class="anno-qnum">Q4</div>
+            <span class="anno-fn">对应问题4（三类事件的逻辑）</span>
+          </div>
+          <div class="anno-content">
+            <strong>三类事件的选择逻辑</strong>：热带气旋（旋转动力学）、大气河（水汽输送）、极端温度（统计异常）——物理机制完全不同，在三类独立任务上同时优于HRES，大大降低了"偶然"或"针对某类现象优化"的可能性。这是设计严谨的多任务泛化检验。
+          </div>
+          <div class="anno-depth">分析深度：关键证据 | 多样性增强了论证的稳健性</div>
+        </div>
+        <div class="anno-card q5">
+          <div class="anno-header">
+            <div class="anno-qnum">Q5</div>
+            <span class="anno-fn">对应问题5（短时效劣势）</span>
+          </div>
+          <div class="anno-content">
+            <strong>12小时极端热事件HRES更好</strong>：这是真实局限，与图2D中2T变量短时效技能分数接近零一致。作者没有掩饰，内部数据一致性反而增强可信度。短时效劣势可能源于ERA5初始化条件的6小时时间步长——系统性的时间分辨率限制。
+          </div>
+          <div class="anno-depth">分析深度：让步处理 | 局限是真实的，但仅限于短时效和特定变量</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 6 -->
+  <div class="section-block" id="s6">
+    <div class="section-header">
+      <div class="section-num-badge">6</div>
+      <div class="section-title">局限与结论：主动让步与历史定位</div>
+    </div>
+    <div class="dual-col">
+      <div class="paper-col">
+        <div class="para-block">
+          <div class="para-text">
+            <mark class="q5">One key limitation of our approach is in how uncertainty is handled. We focused on deterministic forecasts and compared against HRES, but the ensemble forecasting system ENS is especially important for quantifying the probability of extreme events.</mark> The nonlinearity of weather dynamics means that there is increasing uncertainty at longer lead times, which is not well captured by a single deterministic forecast. <mark class="q5">Building probabilistic forecasts that model uncertainty more explicitly, along the lines of ensemble forecasts, is a crucial next step.</mark>
+          </div>
+        </div>
+        <div class="para-block">
+          <div class="para-text">
+            <mark class="q5">Our approach should not be regarded as a replacement for traditional weather forecasting methods</mark>, which have been developed for decades, rigorously tested in many real-world contexts. Rather, our work should be interpreted as evidence that MLWP is able to meet the challenges of real-world forecasting problems.
+          </div>
+        </div>
+        <div class="para-block">
+          <div class="para-text">
+            GraphCast's forecast skill and efficiency compared with HRES shows that MLWP methods are now competitive with traditional weather forecasting methods. <mark class="q1">We believe this marks a turning point in weather forecasting.</mark> Generally, GraphCast should be viewed as a family of models, with the current version being the largest we can practically fit under current engineering constraints, but <mark class="q1">which have the potential to scale much further in the future with greater compute resources and higher-resolution data.</mark>
+          </div>
+        </div>
+      </div>
+      <div class="anno-col">
+        <div class="anno-card q5">
+          <div class="anno-header">
+            <div class="anno-qnum">Q5</div>
+            <span class="anno-fn">对应问题5（最大局限）</span>
+          </div>
+          <div class="anno-content">
+            <strong>不确定性量化是真正的致命弱点吗？</strong> 是，也不是。对于日常天气使用，确定性预报已够用。但在防灾减灾决策中（飓风撤离、洪水预警），需要知道"50km以内命中概率是多少"，这是确定性预报根本做不到的。作者将其列为"下一步"而非否定整篇论文，是合理的声索管理。
+          </div>
+          <div class="anno-depth">分析深度：局限分析 | 是否致命取决于应用场景</div>
+        </div>
+        <div class="anno-card q5">
+          <div class="anno-header">
+            <div class="anno-qnum">Q5</div>
+            <span class="anno-fn">对应问题5（声索缩小策略）</span>
+          </div>
+          <div class="anno-content">
+            <strong>"补充而非替代"的修辞策略</strong>：通过主动降低声索强度，论文避免了直接威胁NWP社区的利益，减少了防御性批评。从论证逻辑看，这一表述实际上比"替代"更难被证伪——"有补充价值"的门槛远低于"完全替代"，使论文结论更稳固。
+          </div>
+          <div class="anno-depth">分析深度：论证技巧 | 这是战略性而非被迫的让步</div>
+        </div>
+        <div class="anno-card q1">
+          <div class="anno-header">
+            <div class="anno-qnum">Q1</div>
+            <span class="anno-fn">对应问题1（更大意义）</span>
+          </div>
+          <div class="anno-content">
+            <strong>"转折点"论断的修辞力量</strong>：这是全文最宏大的声索，放在结论最末处——经过6页证据铺垫后才提出。"可扩展性"论点（3670万参数只是起点）隐含了一个更大的承诺：随着算力增长，MLWP的优势将进一步扩大，这将当前工作定位为一个范式转变的开端。
+          </div>
+          <div class="anno-depth">分析深度：论证层次 | 回应Q1关于"为何MLWP有未来"的深层问题</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- WORKSHEET -->
+  <div class="worksheet" id="worksheet">
+    <h3>答题索引 · 双栏卡片答案引导</h3>
+    <div class="ws-grid">
+      <div class="ws-card q1">
+        <div class="ws-q-header">
+          <div class="ws-badge">Q1</div>
+          <div class="ws-q-text">NWP vs MLWP的核心优势 + 可扩展性</div>
+        </div>
+        <div class="ws-levels">
+          <div class="ws-level"><div class="ws-dot"></div><span class="ws-label">核心论点</span><span>NWP不能从历史数据学习；MLWP可捕捉隐含规律</span></div>
+          <div class="ws-level"><div class="ws-dot"></div><span class="ws-label">关键证据</span><span>1分钟/10天，vs HRES约1小时；90%目标优于HRES</span></div>
+          <div class="ws-level"><div class="ws-dot"></div><span class="ws-label">潜在局限</span><span>硬件比较是否公平？是否真的"理解"物理？</span></div>
+        </div>
+      </div>
+      <div class="ws-card q2">
+        <div class="ws-q-header">
+          <div class="ws-badge">Q2</div>
+          <div class="ws-q-text">架构三部分 + multimesh设计</div>
+        </div>
+        <div class="ws-levels">
+          <div class="ws-level"><div class="ws-dot"></div><span class="ws-label">Encoder</span><span>经纬度网格 → multimesh节点特征提取</span></div>
+          <div class="ws-level"><div class="ws-dot"></div><span class="ws-label">Processor</span><span>16层GNN消息传递，捕获局部+远程依赖</span></div>
+          <div class="ws-level"><div class="ws-dot"></div><span class="ws-label">Decoder</span><span>multimesh特征 → 经纬度网格，输出残差</span></div>
+          <div class="ws-level"><div class="ws-dot"></div><span class="ws-label">multimesh</span><span>解决极点密度不均匀问题，全球均匀分辨率</span></div>
+        </div>
+      </div>
+      <div class="ws-card q3">
+        <div class="ws-q-header">
+          <div class="ws-badge">Q3</div>
+          <div class="ws-q-text">比较框架的公平性 + 90%的置信度</div>
+        </div>
+        <div class="ws-levels">
+          <div class="ws-level"><div class="ws-dot"></div><span class="ws-label">公平性</span><span>HRES-fc0设计，确保两模型初始步均无误差</span></div>
+          <div class="ws-level"><div class="ws-dot"></div><span class="ws-label">置信度</span><span>p≤0.05统计显著，1380目标多维覆盖</span></div>
+          <div class="ws-level"><div class="ws-dot"></div><span class="ws-label">局限</span><span>ERA5依赖NWP的循环问题；有效样本量需关注</span></div>
+        </div>
+      </div>
+      <div class="ws-card q4">
+        <div class="ws-q-header">
+          <div class="ws-badge">Q4</div>
+          <div class="ws-q-text">极端事件泛化能力的意义</div>
+        </div>
+        <div class="ws-levels">
+          <div class="ws-level"><div class="ws-dot"></div><span class="ws-label">意义</span><span>"未训练任务上同样优越"证明学到真实物理规律</span></div>
+          <div class="ws-level"><div class="ws-dot"></div><span class="ws-label">三类事件</span><span>气旋/大气河/极端温度，机制各异但均优于HRES</span></div>
+          <div class="ws-level"><div class="ws-dot"></div><span class="ws-label">论证价值</span><span>从"更好的拟合"升级为"更好的理解"</span></div>
+        </div>
+      </div>
+      <div class="ws-card q5">
+        <div class="ws-q-header">
+          <div class="ws-badge">Q5</div>
+          <div class="ws-q-text">局限性 + 模糊化是否致命</div>
+        </div>
+        <div class="ws-levels">
+          <div class="ws-level"><div class="ws-dot"></div><span class="ws-label">主要局限</span><span>不确定性量化缺位（无概率分布输出）</span></div>
+          <div class="ws-level"><div class="ws-dot"></div><span class="ws-label">模糊化</span><span>MSE目标导致长时效预报趋向集合均值</span></div>
+          <div class="ws-level"><div class="ws-dot"></div><span class="ws-label">是否致命</span><span>取决于应用场景；防灾减灾中是真实限制</span></div>
+          <div class="ws-level"><div class="ws-dot"></div><span class="ws-label">作者应对</span><span>"补充而非替代"+"概率预报是下一步"</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  function jumpTo(id) {
+    const el = document.querySelector(id);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+  const btns = document.querySelectorAll('.sec-btn');
+  const sections = ['#s1','#s2','#s3','#s4','#s5','#s6','#worksheet'].map(id => document.querySelector(id));
+  window.addEventListener('scroll', () => {
+    let current = 0;
+    sections.forEach((s, i) => {
+      if (s && s.getBoundingClientRect().top <= 200) current = i;
+    });
+    btns.forEach((b, i) => b.classList.toggle('active', i === current));
+  });
+</script>
+</body>
+</html>
