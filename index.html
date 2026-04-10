@@ -217,7 +217,7 @@ h1 em{color:var(--gold-d);font-style:italic}
             <input type="file" id="fi" accept=".pdf">
             <span class="dz-ico">📋</span>
             <div class="dz-t">拖拽 PDF 到这里</div>
-            <div class="dz-s">支持 .pdf 格式 · 最大 50 MB</div>
+            <div class="dz-s">支持 .pdf 格式 · 最大 10 MB</div>
           </div>
           <div class="or">或</div>
           <button class="fbtn" onclick="document.getElementById('fi').click()"><span>📁</span>浏览本地文件</button>
@@ -410,6 +410,7 @@ dz.addEventListener('drop', e => {
 });
 fi.addEventListener('change', e => { if (e.target.files[0]) setFile(e.target.files[0]); });
 function setFile(f) {
+  if (f.size > 10 * 1024 * 1024) { toast('文件超过 10MB 限制，请压缩后重试（推荐 smallpdf.com）', 'er'); return; }
   selFile = f;
   document.getElementById('fn').textContent = f.name + '  (' + (f.size/1024/1024).toFixed(1) + ' MB)';
   document.getElementById('fb').classList.add('on');
@@ -685,6 +686,7 @@ Output ONLY complete HTML starting with <!DOCTYPE html>. Be thorough — cover a
     let msg = `HTTP ${resp.status}`;
     try { const e = await resp.json(); msg = e.error?.message || msg; } catch(x){}
     if (resp.status === 401) msg = 'API Key 无效，请重新设置';
+    else if (resp.status === 413) msg = 'PDF 文件过大（超出 API 限制），请压缩至 10MB 以下后重试。推荐使用 smallpdf.com 或 ilovepdf.com';
     else if (resp.status === 429) msg = '请求频率超限，请稍后重试';
     else if (resp.status === 529) msg = '服务繁忙，请稍后重试';
     throw new Error(msg);
