@@ -30,6 +30,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--paper);color:var(--ink);m
 .key-btn:hover{background:var(--paper3);color:var(--ink)}
 .kd{width:7px;height:7px;border-radius:50%;background:#ddd;flex-shrink:0;transition:background .3s}
 .kd.on{background:var(--green)}
+.lang-btn{padding:5px 10px;background:var(--paper2);border:1px solid var(--bm);border-radius:6px;font-size:12px;font-family:'DM Sans',sans-serif;color:#666;cursor:pointer;transition:all .2s;font-weight:500}
+.lang-btn:hover{background:var(--paper3);color:var(--ink)}
 
 .hero{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:3rem 1.5rem;position:relative;overflow:hidden}
 .hero::before{content:'';position:absolute;inset:0;background-image:linear-gradient(var(--b) 1px,transparent 1px),linear-gradient(90deg,var(--b) 1px,transparent 1px);background-size:52px 52px;pointer-events:none}
@@ -192,7 +194,8 @@ h1 em{color:var(--gold-d);font-style:italic}
   <div class="hd">
     <div class="logo">Paper<span>Lens</span></div>
     <div class="hd-r">
-      <span class="hd-tag">AI Literature Annotation</span>
+      <span class="hd-tag" id="hd-tag">AI 文献批注</span>
+      <button class="lang-btn" id="langbtn" onclick="toggleLang()">EN</button>
       <button class="key-btn" id="kbtn" onclick="openModal()">
         <span class="kd" id="kd"></span>API Key
       </button>
@@ -201,9 +204,9 @@ h1 em{color:var(--gold-d);font-style:italic}
 
   <div class="hero">
     <div class="hi">
-      <div class="ey"><div class="eyd"></div>由 Claude AI 驱动 · 双栏批注系统</div>
-      <h1>让文献阅读<br>拥有<em>结构与深度</em></h1>
-      <p class="sub">上传学术论文 PDF 或粘贴文献链接，自动生成专业双栏批注——逻辑分析、核心论点、证据质量、论证漏洞，一键呈现。</p>
+      <div class="ey" id="eyline"><div class="eyd"></div>由 Claude AI 驱动 · 双栏批注系统</div>
+      <h1 id="hero-h1">让文献阅读<br>拥有<em>结构与深度</em></h1>
+      <p class="sub" id="hero-sub">上传学术论文 PDF 或粘贴文献链接，自动生成专业双栏批注——逻辑分析、核心论点、证据质量、论证漏洞，一键呈现。</p>
 
       <div class="uc">
         <div class="tabs">
@@ -216,11 +219,11 @@ h1 em{color:var(--gold-d);font-style:italic}
           <div class="dz" id="dz">
             <input type="file" id="fi" accept=".pdf">
             <span class="dz-ico">📋</span>
-            <div class="dz-t">拖拽 PDF 到这里</div>
-            <div class="dz-s">支持 .pdf 格式 · 最大 10 MB</div>
+            <div class="dz-t" id="dz-t">拖拽 PDF 到这里</div>
+            <div class="dz-s" id="dz-s">支持 .pdf 格式 · 最大 10 MB</div>
           </div>
-          <div class="or">或</div>
-          <button class="fbtn" onclick="document.getElementById('fi').click()"><span>📁</span>浏览本地文件</button>
+          <div class="or" id="or-sep">或</div>
+          <button class="fbtn" id="fbtn" onclick="document.getElementById('fi').click()"><span>📁</span>浏览本地文件</button>
           <div class="fbadge" id="fb">
             <span style="font-size:18px">📄</span>
             <span class="fn" id="fn"></span>
@@ -234,7 +237,7 @@ h1 em{color:var(--gold-d);font-style:italic}
             <input type="url" class="url-f" id="urli" placeholder="https://arxiv.org/pdf/2212.12000.pdf" onkeydown="if(event.key==='Enter')fetchUrl()">
             <button class="url-go" id="ugbtn" onclick="fetchUrl()">获取</button>
           </div>
-          <p class="url-hint">支持 arXiv、bioRxiv 等 PDF 直链，系统自动下载并保留原文件</p>
+          <p class="url-hint" id="url-hint">支持 arXiv、bioRxiv 等 PDF 直链，系统自动下载并保留原文件</p>
           <div class="url-st" id="ust">
             <span class="spin" id="uspin"></span>
             <span id="ustxt"></span>
@@ -243,17 +246,17 @@ h1 em{color:var(--gold-d);font-style:italic}
 
         <!-- SETTINGS -->
         <div class="sets">
-          <div class="sets-lbl">分析设置</div>
+          <div class="sets-lbl" id="sets-lbl">分析设置</div>
           <div class="sg">
             <div class="si">
-              <div class="sl">批注模式</div>
+              <div class="sl" id="mode-lbl">批注模式</div>
               <select class="ss" id="ms" onchange="onModeChange()">
                 <option value="logic">纯逻辑分析版（Prompt B）</option>
                 <option value="question">有 Question 清单版（Prompt A）</option>
               </select>
             </div>
             <div class="si">
-              <div class="sl">批注语言</div>
+              <div class="sl" id="lang-lbl">批注语言</div>
               <select class="ss" id="ls">
                 <option value="zh">中文</option>
                 <option value="en">English</option>
@@ -261,14 +264,14 @@ h1 em{color:var(--gold-d);font-style:italic}
             </div>
           </div>
           <div id="qw" style="display:none">
-            <div class="sl" style="margin-bottom:5px">自定义阅读问题（每行一个，留空则自动生成）</div>
+            <div class="sl" style="margin-bottom:5px" id="qs-lbl">自定义阅读问题（每行一个，留空则自动生成）</div>
             <textarea class="qi" id="qi" placeholder="例：&#10;GraphCast 相比 NWP 的核心优势是什么？&#10;模型如何处理全球空间不均匀问题？"></textarea>
           </div>
         </div>
 
         <div class="sw">
           <button class="sb" id="subbtn" onclick="startAnalysis()">
-            <span style="font-size:16px">✦</span>开始分析
+            <span style="font-size:16px">✦</span><span id="subbtn-txt">开始分析</span>
           </button>
         </div>
       </div><!-- /uc -->
@@ -276,8 +279,8 @@ h1 em{color:var(--gold-d);font-style:italic}
       <!-- HISTORY -->
       <div class="hist" id="hist" style="display:none">
         <div class="ht">
-          <span>最近分析</span>
-          <button class="hcl" onclick="clearHistory()">清除全部</button>
+          <span id="hist-title">最近分析</span>
+          <button class="hcl" id="hist-clear-btn" onclick="clearHistory()">清除全部</button>
         </div>
         <div class="hg" id="hg"></div>
       </div>
@@ -289,16 +292,16 @@ h1 em{color:var(--gold-d);font-style:italic}
 <div class="mo" id="mo" onclick="if(event.target===this)closeModal()">
   <div class="md">
     <div class="mh">
-      <span class="mt">设置 Anthropic API Key</span>
+      <span class="mt" id="modal-title">设置 Anthropic API Key</span>
       <button class="mc" onclick="closeModal()">×</button>
     </div>
-    <p class="md-desc">
+    <p class="md-desc" id="modal-desc">
       PaperLens 直接从浏览器调用 Anthropic API，您的 Key 仅存储在本地浏览器中，不经过任何中间服务器。<br><br>
       还没有 Key？前往 <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a> 申请。
     </p>
     <div class="kr">
       <input type="password" class="ki" id="ki" placeholder="sk-ant-api03-…" spellcheck="false">
-      <button class="ks" onclick="saveKey()">保存</button>
+      <button class="ks" id="ks-btn" onclick="saveKey()">保存</button>
     </div>
     <p class="kh" id="kh">Key 保存在浏览器 localStorage，关闭页面后仍有效。</p>
   </div>
@@ -315,13 +318,13 @@ h1 em{color:var(--gold-d);font-style:italic}
     <div class="rpulse"></div>
     <div class="rico">✦</div>
   </div>
-  <div class="ph">正在分析文献…</div>
+  <div class="ph" id="prog-heading">正在分析文献…</div>
   <div class="ps" id="ps">初始化中</div>
   <div class="stps">
-    <div class="stp" id="s0"><span class="sd"></span><span class="sc">✓</span>读取文件内容</div>
-    <div class="stp" id="s1"><span class="sd"></span><span class="sc">✓</span>解析论文结构</div>
-    <div class="stp" id="s2"><span class="sd"></span><span class="sc">✓</span>Claude 生成批注</div>
-    <div class="stp" id="s3"><span class="sd"></span><span class="sc">✓</span>渲染双栏页面</div>
+    <div class="stp" id="s0"><span class="sd"></span><span class="sc">✓</span><span id="s0-txt">读取文件内容</span></div>
+    <div class="stp" id="s1"><span class="sd"></span><span class="sc">✓</span><span id="s1-txt">解析论文结构</span></div>
+    <div class="stp" id="s2"><span class="sd"></span><span class="sc">✓</span><span id="s2-txt">Claude 生成批注</span></div>
+    <div class="stp" id="s3"><span class="sd"></span><span class="sc">✓</span><span id="s3-txt">渲染双栏页面</span></div>
   </div>
   <div id="sc"></div>
 </div>
@@ -335,9 +338,10 @@ h1 em{color:var(--gold-d);font-style:italic}
       <span class="rn-t" id="rnt">—</span>
     </div>
     <div class="rn-a">
-      <button class="rbtn" onclick="dlHTML()">⬇ 下载 HTML</button>
+      <button class="rbtn" id="rn-langbtn" onclick="toggleLang()">EN</button>
+      <button class="rbtn" id="dl-html-btn" onclick="dlHTML()">⬇ 下载 HTML</button>
       <button class="rbtn" id="dlpdf" style="display:none" onclick="dlPDF()">⬇ 保存 PDF</button>
-      <button class="rbtn gd" onclick="reset()">＋ 新论文</button>
+      <button class="rbtn gd" id="new-paper-btn" onclick="reset()">＋ 新论文</button>
     </div>
   </nav>
   <div id="rfw"><iframe id="rif" sandbox="allow-scripts allow-same-origin allow-popups"></iframe></div>
@@ -355,13 +359,161 @@ let urlB64 = null, urlTitle = '';
 let lastHTML = '', lastTitle = '', lastB64 = '';
 
 /* ════════════════════════════════
+   I18N
+════════════════════════════════ */
+let uiLang = localStorage.getItem('pl_lang') || 'zh';
+
+const TRANS = {
+  zh: {
+    hd_tag: 'AI 文献批注',
+    eyline: '由 Claude AI 驱动 · 双栏批注系统',
+    h1: '让文献阅读<br>拥有<em>结构与深度</em>',
+    sub: '上传学术论文 PDF 或粘贴文献链接，自动生成专业双栏批注——逻辑分析、核心论点、证据质量、论证漏洞，一键呈现。',
+    tab_file: '本地上传', tab_url: '输入链接',
+    dz_t: '拖拽 PDF 到这里', dz_s: '支持 .pdf 格式 · 最大 10 MB',
+    or: '或', fbtn: '浏览本地文件',
+    url_go: '获取', url_hint: '支持 arXiv、bioRxiv 等 PDF 直链，系统自动下载并保留原文件',
+    sets_lbl: '分析设置', mode_lbl: '批注模式',
+    mode_logic: '纯逻辑分析版（Prompt B）', mode_question: '有 Question 清单版（Prompt A）',
+    lang_lbl: '批注语言', lang_zh: '中文', lang_en: 'English',
+    qs_lbl: '自定义阅读问题（每行一个，留空则自动生成）',
+    qs_ph: '例：\nGraphCast 相比 NWP 的核心优势是什么？\n模型如何处理全球空间不均匀问题？',
+    submit: '开始分析', hist_title: '最近分析', hist_clear: '清除全部',
+    modal_title: '设置 Anthropic API Key',
+    modal_desc: 'PaperLens 直接从浏览器调用 Anthropic API，您的 Key 仅存储在本地浏览器中，不经过任何中间服务器。<br><br>还没有 Key？前往 <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a> 申请。',
+    key_save: '保存', key_hint: 'Key 保存在浏览器 localStorage，关闭页面后仍有效。',
+    prog_title: '正在分析文献…', prog_init: '初始化中',
+    s0: '读取文件内容', s1: '解析论文结构', s2: 'Claude 生成批注', s3: '渲染双栏页面',
+    smsg0: '正在读取 PDF 内容…', smsg1: '提取论文结构与章节…',
+    smsg2: 'Claude 正在生成批注，约需 1-2 分钟…', smsg3: '渲染双栏批注页面…',
+    dl_html: '⬇ 下载 HTML', dl_pdf: '⬇ 保存 PDF', new_paper: '＋ 新论文',
+    toast_no_key: '请先设置 API Key', toast_no_file: '请先选择 PDF 文件',
+    toast_enter_url: '请输入链接并点击「获取」', toast_fetch_first: '请先点击「获取」下载 PDF',
+    toast_done: '批注生成完成！', toast_html_dl: 'HTML 已下载', toast_pdf_dl: 'PDF 已下载',
+    toast_hist_cleared: '历史已清除', toast_pdf_only: '请上传 PDF 文件',
+    toast_too_large: '文件超过 10MB 限制，请压缩后重试（推荐 smallpdf.com）',
+    toast_invalid_url: '请输入有效的 URL',
+    err_401: 'API Key 无效，请重新设置',
+    err_413: 'PDF 文件过大（超出 API 限制），请压缩至 10MB 以下后重试。推荐使用 smallpdf.com 或 ilovepdf.com',
+    err_429: '请求频率超限，请稍后重试', err_529: '服务繁忙，请稍后重试',
+    err_empty: 'API 返回空响应，请重试', err_format: '生成内容格式异常，请重试',
+    err_no_pdf: '无法下载 PDF，请检查链接格式或改用本地上传',
+    key_invalid: '格式不正确，应以 sk- 开头', key_saved: '✓ 已保存',
+    fetching_pdf: '正在下载 PDF…',
+    pdf_ready: (sz) => `✓ PDF 已就绪（约 ${sz} KB）`,
+    chars_generated: (n) => `已生成 ${n.toLocaleString()} 字符…`,
+    analysis_failed: '分析失败：',
+    hist_badge_logic: '逻辑', hist_badge_q: 'Q清单', hist_lang_zh: '中',
+    lang_toggle: 'EN',
+    page_title: 'PaperLens · 文献智能批注'
+  },
+  en: {
+    hd_tag: 'AI Literature Annotation',
+    eyline: 'Powered by Claude AI · Dual-Column Annotation',
+    h1: 'Give Your Literature Reading<br><em>Structure & Depth</em>',
+    sub: 'Upload an academic PDF or paste a paper URL to auto-generate professional dual-column annotations — logic analysis, core arguments, evidence quality, reasoning gaps — all in one click.',
+    tab_file: 'Upload File', tab_url: 'Enter URL',
+    dz_t: 'Drop PDF here', dz_s: 'Supports .pdf format · Max 10 MB',
+    or: 'or', fbtn: 'Browse Local File',
+    url_go: 'Fetch', url_hint: 'Supports arXiv, bioRxiv and other direct PDF links. File is downloaded and preserved.',
+    sets_lbl: 'Analysis Settings', mode_lbl: 'Annotation Mode',
+    mode_logic: 'Logic Analysis (Prompt B)', mode_question: 'Question Checklist (Prompt A)',
+    lang_lbl: 'Annotation Language', lang_zh: 'Chinese', lang_en: 'English',
+    qs_lbl: 'Custom reading questions (one per line, leave blank to auto-generate)',
+    qs_ph: 'e.g.:\nWhat is the core advantage of GraphCast over NWP?\nHow does the model handle global spatial non-uniformity?',
+    submit: 'Start Analysis', hist_title: 'Recent Analyses', hist_clear: 'Clear All',
+    modal_title: 'Set Anthropic API Key',
+    modal_desc: 'PaperLens calls the Anthropic API directly from your browser. Your key is stored only in local browser storage and never passes through any intermediate server.<br><br>No key yet? Get one at <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a>.',
+    key_save: 'Save', key_hint: 'Key is stored in browser localStorage and persists after closing.',
+    prog_title: 'Analyzing paper…', prog_init: 'Initializing',
+    s0: 'Reading file content', s1: 'Parsing paper structure', s2: 'Claude generating annotations', s3: 'Rendering dual-column page',
+    smsg0: 'Reading PDF content…', smsg1: 'Extracting paper structure and sections…',
+    smsg2: 'Claude is generating annotations, ~1-2 min…', smsg3: 'Rendering dual-column annotation page…',
+    dl_html: '⬇ Download HTML', dl_pdf: '⬇ Save PDF', new_paper: '+ New Paper',
+    toast_no_key: 'Please set your API Key first', toast_no_file: 'Please select a PDF file',
+    toast_enter_url: 'Please enter a URL and click Fetch', toast_fetch_first: 'Please click Fetch to download the PDF first',
+    toast_done: 'Annotation complete!', toast_html_dl: 'HTML downloaded', toast_pdf_dl: 'PDF downloaded',
+    toast_hist_cleared: 'History cleared', toast_pdf_only: 'Please upload a PDF file',
+    toast_too_large: 'File exceeds 10MB limit. Please compress it first (try smallpdf.com)',
+    toast_invalid_url: 'Please enter a valid URL',
+    err_401: 'Invalid API Key, please reset',
+    err_413: 'PDF too large (exceeds API limit). Please compress to under 10MB. Try smallpdf.com or ilovepdf.com',
+    err_429: 'Rate limit exceeded, please retry later', err_529: 'Service busy, please retry later',
+    err_empty: 'API returned empty response, please retry', err_format: 'Generated content format error, please retry',
+    err_no_pdf: 'Unable to download PDF. Please check the URL format or use local upload',
+    key_invalid: 'Invalid format, must start with sk-', key_saved: '✓ Saved',
+    fetching_pdf: 'Downloading PDF…',
+    pdf_ready: (sz) => `✓ PDF ready (~${sz} KB)`,
+    chars_generated: (n) => `Generated ${n.toLocaleString()} characters…`,
+    analysis_failed: 'Analysis failed: ',
+    hist_badge_logic: 'Logic', hist_badge_q: 'Q-List', hist_lang_zh: 'ZH',
+    lang_toggle: '中文',
+    page_title: 'PaperLens · AI Paper Annotation'
+  }
+};
+
+function t(k) { return (TRANS[uiLang] || TRANS.zh)[k] || k; }
+
+function applyLang() {
+  const L = TRANS[uiLang] || TRANS.zh;
+  const setText = (id, v) => { const el = document.getElementById(id); if(el) el.textContent = v; };
+  const setHTML = (id, v) => { const el = document.getElementById(id); if(el) el.innerHTML = v; };
+  const setAttr = (id, a, v) => { const el = document.getElementById(id); if(el) el.setAttribute(a, v); };
+
+  setText('hd-tag', L.hd_tag);
+  setHTML('eyline', `<div class="eyd"></div>${L.eyline}`);
+  setHTML('hero-h1', L.h1);
+  setText('hero-sub', L.sub);
+  setHTML('t-file', `<span>📄</span>${L.tab_file}`);
+  setHTML('t-url', `<span>🔗</span>${L.tab_url}`);
+  setText('dz-t', L.dz_t);
+  setText('dz-s', L.dz_s);
+  setText('or-sep', L.or);
+  setHTML('fbtn', `<span>📁</span>${L.fbtn}`);
+  setText('ugbtn', L.url_go);
+  setText('url-hint', L.url_hint);
+  setText('sets-lbl', L.sets_lbl);
+  setText('mode-lbl', L.mode_lbl);
+  const ms = document.getElementById('ms');
+  if(ms) { ms.options[0].text = L.mode_logic; ms.options[1].text = L.mode_question; }
+  setText('lang-lbl', L.lang_lbl);
+  const ls = document.getElementById('ls');
+  if(ls) { ls.options[0].text = L.lang_zh; ls.options[1].text = L.lang_en; }
+  setText('qs-lbl', L.qs_lbl);
+  setAttr('qi', 'placeholder', L.qs_ph);
+  setText('subbtn-txt', L.submit);
+  setText('hist-title', L.hist_title);
+  setText('hist-clear-btn', L.hist_clear);
+  setText('modal-title', L.modal_title);
+  setHTML('modal-desc', L.modal_desc);
+  setText('ks-btn', L.key_save);
+  setText('prog-heading', L.prog_title);
+  setText('s0-txt', L.s0); setText('s1-txt', L.s1);
+  setText('s2-txt', L.s2); setText('s3-txt', L.s3);
+  setText('dl-html-btn', L.dl_html);
+  setText('new-paper-btn', L.new_paper);
+  const dlpdf = document.getElementById('dlpdf');
+  if(dlpdf) dlpdf.textContent = L.dl_pdf;
+  setText('langbtn', L.lang_toggle);
+  setText('rn-langbtn', L.lang_toggle);
+  document.title = L.page_title;
+  renderHist();
+}
+
+function toggleLang() {
+  uiLang = uiLang === 'zh' ? 'en' : 'zh';
+  localStorage.setItem('pl_lang', uiLang);
+  applyLang();
+}
+
+/* ════════════════════════════════
    KEY MODAL
 ════════════════════════════════ */
 const getKey = () => localStorage.getItem('pl_key') || '';
 function refreshKeyDot() { document.getElementById('kd').classList.toggle('on', !!getKey()); }
 function openModal() {
   document.getElementById('ki').value = getKey();
-  document.getElementById('kh').textContent = 'Key 保存在浏览器 localStorage，关闭页面后仍有效。';
+  document.getElementById('kh').textContent = t('key_hint');
   document.getElementById('kh').className = 'kh';
   document.getElementById('mo').classList.add('on');
 }
@@ -369,13 +521,13 @@ function closeModal() { document.getElementById('mo').classList.remove('on'); }
 function saveKey() {
   const v = document.getElementById('ki').value.trim();
   if (!v.startsWith('sk-')) {
-    document.getElementById('kh').textContent = '格式不正确，应以 sk- 开头';
+    document.getElementById('kh').textContent = t('key_invalid');
     document.getElementById('kh').className = 'kh';
     return;
   }
   localStorage.setItem('pl_key', v);
   refreshKeyDot();
-  document.getElementById('kh').textContent = '✓ 已保存';
+  document.getElementById('kh').textContent = t('key_saved');
   document.getElementById('kh').className = 'kh ok';
   setTimeout(closeModal, 800);
 }
@@ -406,11 +558,11 @@ dz.addEventListener('drop', e => {
   e.preventDefault(); dz.classList.remove('ov');
   const f = e.dataTransfer.files[0];
   if (f && (f.type === 'application/pdf' || f.name.endsWith('.pdf'))) setFile(f);
-  else toast('请上传 PDF 文件', 'er');
+  else toast(t('toast_pdf_only'), 'er');
 });
 fi.addEventListener('change', e => { if (e.target.files[0]) setFile(e.target.files[0]); });
 function setFile(f) {
-  if (f.size > 10 * 1024 * 1024) { toast('文件超过 10MB 限制，请压缩后重试（推荐 smallpdf.com）', 'er'); return; }
+  if (f.size > 10 * 1024 * 1024) { toast(t('toast_too_large'), 'er'); return; }
   selFile = f;
   document.getElementById('fn').textContent = f.name + '  (' + (f.size/1024/1024).toFixed(1) + ' MB)';
   document.getElementById('fb').classList.add('on');
@@ -426,19 +578,19 @@ function clearFile(e) {
 ════════════════════════════════ */
 async function fetchUrl() {
   const url = document.getElementById('urli').value.trim();
-  if (!url.startsWith('http')) { toast('请输入有效的 URL', 'er'); return; }
+  if (!url.startsWith('http')) { toast(t('toast_invalid_url'), 'er'); return; }
   const stEl = document.getElementById('ust');
   const txtEl = document.getElementById('ustxt');
   const spinEl = document.getElementById('uspin');
   const btn = document.getElementById('ugbtn');
   stEl.className = 'url-st ld'; spinEl.style.display = '';
-  txtEl.textContent = '正在下载 PDF…'; btn.disabled = true; urlB64 = null;
+  txtEl.textContent = t('fetching_pdf'); btn.disabled = true; urlB64 = null;
   try {
     const b64 = await fetchPDFb64(url);
     urlB64 = b64; lastB64 = b64;
     urlTitle = url.split('/').pop().split('?')[0].replace(/\.pdf$/i,'') || 'paper';
     stEl.className = 'url-st ok'; spinEl.style.display = 'none';
-    txtEl.textContent = '✓ PDF 已就绪（约 ' + Math.round(b64.length * 0.75 / 1024) + ' KB）';
+    txtEl.textContent = t('pdf_ready')(Math.round(b64.length * 0.75 / 1024));
     document.getElementById('dlpdf').style.display = '';
   } catch(err) {
     stEl.className = 'url-st er'; spinEl.style.display = 'none';
@@ -464,7 +616,7 @@ async function fetchPDFb64(rawUrl) {
       return blobToB64(blob);
     } catch(e) { continue; }
   }
-  throw new Error('无法下载 PDF，请检查链接格式或改用本地上传');
+  throw new Error(t('err_no_pdf'));
 }
 
 const blobToB64 = b => new Promise((res,rej)=>{
@@ -477,7 +629,7 @@ const fileToB64 = f => new Promise((res,rej)=>{
 /* ════════════════════════════════
    PROGRESS
 ════════════════════════════════ */
-const SMSG = ['正在读取 PDF 内容…','提取论文结构与章节…','Claude 正在生成批注，约需 1-2 分钟…','渲染双栏批注页面…'];
+const SMSG = () => [t('smsg0'), t('smsg1'), t('smsg2'), t('smsg3')];
 const SOFF = [182, 136, 91, 45, 0];
 function setStep(i) {
   for(let j=0;j<4;j++){
@@ -487,7 +639,7 @@ function setStep(i) {
     else if(j===i) el.classList.add('ac');
   }
   document.getElementById('rfill').style.strokeDashoffset = SOFF[i] || 0;
-  document.getElementById('ps').textContent = SMSG[i] || '';
+  document.getElementById('ps').textContent = SMSG()[i] || '';
 }
 
 /* ════════════════════════════════
@@ -600,18 +752,18 @@ Cover ALL major sections thoroughly.`;
 ════════════════════════════════ */
 async function startAnalysis() {
   const key = getKey();
-  if (!key) { openModal(); toast('请先设置 API Key', 'er'); return; }
+  if (!key) { openModal(); toast(t('toast_no_key'), 'er'); return; }
   const mode = document.getElementById('ms').value;
   const lang = document.getElementById('ls').value;
   const qs = document.getElementById('qi').value.trim();
 
   if (inputMode === 'file') {
-    if (!selFile) { toast('请先选择 PDF 文件', 'er'); return; }
+    if (!selFile) { toast(t('toast_no_file'), 'er'); return; }
   } else {
     if (!urlB64) {
       const u = document.getElementById('urli').value.trim();
-      if (!u) { toast('请输入链接并点击「获取」', 'er'); return; }
-      toast('请先点击「获取」下载 PDF', 'er'); return;
+      if (!u) { toast(t('toast_enter_url'), 'er'); return; }
+      toast(t('toast_fetch_first'), 'er'); return;
     }
   }
 
@@ -645,7 +797,7 @@ async function startAnalysis() {
     console.error(err);
     document.getElementById('pv').classList.remove('on');
     document.getElementById('uv').style.display = 'flex';
-    toast('分析失败：' + (err.message || err), 'er');
+    toast(t('analysis_failed') + (err.message || err), 'er');
   }
 }
 
@@ -685,10 +837,10 @@ Output ONLY complete HTML starting with <!DOCTYPE html>. Be thorough — cover a
   if (!resp.ok) {
     let msg = `HTTP ${resp.status}`;
     try { const e = await resp.json(); msg = e.error?.message || msg; } catch(x){}
-    if (resp.status === 401) msg = 'API Key 无效，请重新设置';
-    else if (resp.status === 413) msg = 'PDF 文件过大（超出 API 限制），请压缩至 10MB 以下后重试。推荐使用 smallpdf.com 或 ilovepdf.com';
-    else if (resp.status === 429) msg = '请求频率超限，请稍后重试';
-    else if (resp.status === 529) msg = '服务繁忙，请稍后重试';
+    if (resp.status === 401) msg = t('err_401');
+    else if (resp.status === 413) msg = t('err_413');
+    else if (resp.status === 429) msg = t('err_429');
+    else if (resp.status === 529) msg = t('err_529');
     throw new Error(msg);
   }
 
@@ -710,13 +862,13 @@ Output ONLY complete HTML starting with <!DOCTYPE html>. Be thorough — cover a
           full += p.delta.text;
           chars += p.delta.text.length;
           if (chars % 300 < p.delta.text.length)
-            scEl.textContent = '已生成 ' + chars.toLocaleString() + ' 字符…';
+            scEl.textContent = t('chars_generated')(chars);
         }
       } catch(e) {}
     }
   }
 
-  if (!full.trim()) throw new Error('API 返回空响应，请重试');
+  if (!full.trim()) throw new Error(t('err_empty'));
 
   // strip markdown fences if present
   let html = full.trim();
@@ -726,7 +878,7 @@ Output ONLY complete HTML starting with <!DOCTYPE html>. Be thorough — cover a
   if (html.startsWith('```')) html = html.slice(3).trim();
   if (html.endsWith('```')) html = html.slice(0,-3).trim();
 
-  if (!html.includes('<html') && !html.startsWith('<!')) throw new Error('生成内容格式异常，请重试');
+  if (!html.includes('<html') && !html.startsWith('<!')) throw new Error(t('err_format'));
   return html;
 }
 
@@ -750,7 +902,7 @@ function showResult(html, title) {
   window.addEventListener('resize', resizeIframe);
 
   document.getElementById('rv').classList.add('on');
-  toast('批注生成完成！', 'ok');
+  toast(t('toast_done'), 'ok');
 }
 
 /* ════════════════════════════════
@@ -763,7 +915,7 @@ function dlHTML() {
   const a = document.createElement('a');
   a.href = u; a.download = safeName(lastTitle) + '_annotation.html';
   a.click(); URL.revokeObjectURL(u);
-  toast('HTML 已下载');
+  toast(t('toast_html_dl'));
 }
 function dlPDF() {
   if (!lastB64) return;
@@ -774,7 +926,7 @@ function dlPDF() {
   const a = document.createElement('a');
   a.href = u; a.download = safeName(lastTitle) + '.pdf';
   a.click(); URL.revokeObjectURL(u);
-  toast('PDF 已下载');
+  toast(t('toast_pdf_dl'));
 }
 function safeName(s) { return (s||'paper').replace(/[^\w\u4e00-\u9fa5\- ]/g,'_').trim().slice(0,60); }
 
@@ -784,7 +936,7 @@ function safeName(s) { return (s||'paper').replace(/[^\w\u4e00-\u9fa5\- ]/g,'_')
 function saveHist(title, mode, lang, html) {
   try {
     let h = JSON.parse(localStorage.getItem('pl_hist')||'[]');
-    h.unshift({ id: Date.now(), title, mode, lang, html, date: new Date().toLocaleDateString('zh-CN') });
+    h.unshift({ id: Date.now(), title, mode, lang, html, date: new Date().toLocaleDateString(uiLang === 'zh' ? 'zh-CN' : 'en-US') });
     h = h.slice(0, 8);
     localStorage.setItem('pl_hist', JSON.stringify(h));
     renderHist();
@@ -800,7 +952,7 @@ function renderHist() {
     g.innerHTML = h.map(x=>`
       <div class="hi2" onclick="loadHist(${x.id})">
         <div class="hn" title="${x.title}">${x.title}</div>
-        <div class="hm"><span>${x.date}</span><span class="hbadge">${x.mode==='logic'?'逻辑':'Q清单'}</span><span>${x.lang==='zh'?'中':'EN'}</span></div>
+        <div class="hm"><span>${x.date}</span><span class="hbadge">${x.mode==='logic'?t('hist_badge_logic'):t('hist_badge_q')}</span><span>${x.lang==='zh'?t('hist_lang_zh'):'EN'}</span></div>
       </div>`).join('');
   } catch(e){}
 }
@@ -815,7 +967,7 @@ function loadHist(id) {
 function clearHistory() {
   localStorage.removeItem('pl_hist');
   renderHist();
-  toast('历史已清除');
+  toast(t('toast_hist_cleared'));
 }
 
 /* ════════════════════════════════
@@ -848,7 +1000,7 @@ document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeModal(); });
 
 /* INIT */
 refreshKeyDot();
-renderHist();
+applyLang();
 </script>
 </body>
 </html>
